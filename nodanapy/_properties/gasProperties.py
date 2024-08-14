@@ -26,7 +26,7 @@ class GasProperties:
     def density_gas(self):
         return pp.rho_g.rho_gas(self.pressure, self.temperature, self.specific_gravity, self.factor_compressibility_gas())
     
-    def factor_volumetric_gas(self, units):
-        return pp.Bg.B_g(self.pressure, self.temperature, self.factor_compressibility_gas, units=units)
+    def factor_volumetric_gas(self, units: bool=False):
+        return pp.Bg.B_g(self.pressure, self.temperature, self.factor_compressibility_gas(), units=units)
         
 
