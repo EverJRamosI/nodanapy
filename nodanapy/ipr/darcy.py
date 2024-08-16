@@ -7,7 +7,7 @@ import numpy as np
 from _properties.gasProperties import GasProperties
 
 class Darcy: 
-    def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, permeability_g: int|float=10, skin: int|float=0, height_formation: int|float=10, well_radius: int|float=0.35, external_radius: int|float=1000):
+    def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, permeability_g: int|float=10, skin: int|float=0, height_formation: int|float=10, well_radius: int|float=0.35, external_radius: int|float=1000, water_cut: float=0.1, gor: int|float=50, amount: int=25):
         self.pressure = pressure
         self.temperature = temperature
         self.specific_gravity = specific_gravity
@@ -16,6 +16,9 @@ class Darcy:
         self.height_formation = height_formation
         self.well_radius = well_radius
         self.external_radius = external_radius
+        self.water_cut = water_cut
+        self.gor = gor
+        self.amount = amount
         
     def _properties_gas_(self):
         properties = GasProperties(self.pressure, self.temperature, self.specific_gravity)
@@ -23,8 +26,8 @@ class Darcy:
         z_gas = properties.factor_compressibility_gas()
         return [mu_gas, z_gas]
         
-    def _p_diff_(self, range: int=25):
-        return np.linspace(self.pressure, 14.7, range)
+    def _p_diff_(self):
+        return np.linspace(self.pressure, 14.7, self.amount)
         
     def _a_flow_(self):
         mu, z = self._properties_gas_()
@@ -49,19 +52,22 @@ class Darcy:
         
         return np.array(flow_results)
     
-    def darcy(self, range: int=25):
+    def darcy(self):
         qg = self.flow_gas()
-        pwf = self._p_diff_(range=range)
-        return [qg, pwf]
+        ql = ((self.gor*qg)/(1-self.water_cut))/1000
+        qo = (1-self.water_cut)*ql
+        qw = ql-qo
+        pwf = self._p_diff_()
+        return [ql, qg, qo, qw, pwf]
     
-#if __name__ == "__main__":
+# if __name__ == "__main__":
     
-#    ipr1 = Darcy(1309, 600)
+#     ipr1 = Darcy(1309, 600, 0.673, 11, 9.95, 76, 0.3542, 909, 0.88, 48.6)
 
 #     p = ipr1._p_diff_()
 #     q = ipr1.flow_gas()
-#    total = ipr1.darcy(10)
-#    print(total)
+#     total = ipr1.darcy()
+#     print(total)
     # import matplotlib.pyplot as plt
 
     # plt.plot(q, p)
