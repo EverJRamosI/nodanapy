@@ -9,7 +9,11 @@ from _properties.oilProperties import OilProperties
 from _properties.waterProperties import WaterProperties
 
 class Gray:
-    def __init__(self, pressure, temperature, specific_gravity: float=0.65, api: int|float=40, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.1, gor: int|float=50, internal_diameter: int|float=2.5, rugosity: float=0.0001, deep_well: int|float=500, qg_max: int|float=10000, amount: int=25):
+    def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
+                api: int|float=40, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.1, 
+                gor: int|float=50, internal_diameter: int|float=2.5, rugosity: float=0.0001, deep_well: int|float=500, 
+                qg_max: int|float=10000, amount: int=25):
+        
         self.pressure = pressure
         self.temperature = temperature
         self.specific_gravity = specific_gravity
@@ -120,7 +124,7 @@ class Gray:
         R_v = self._velocities_()[1]/self._velocities_()[0]
         rugosity_o = (28.5*self._sigma_tensions_()[2])/(453.592*self._densities_()[2]*((self._velocities_()[2])**2))
         rugosity_e = np.where(R_v>=0.007, rugosity_o, self.rugosity + ((rugosity_o - self.rugosity) / 0.007))
-        friction = self._number_reynolds_(rugosity=rugosity_e)[1]
+        friction = self._number_reynolds_()[1]
         delta_pressure = (friction*((self._velocities_()[2])**2)*self._densities_()[2]*self.deep_well)/(144*2*32.17*(self.internal_diameter/12))
         return delta_pressure
         
@@ -138,9 +142,9 @@ class Gray:
 
 
 #np.array([1, 11, 64, 96, 132, 175, 228, 296, 392, 556, 1002, 1484, 2040, 2597, 3153, 3709])
-#if __name__ == "__main__":
+if __name__ == "__main__":
     
-    #vlp1 = Gray(130, (80+460), 0.673, 53.7, 149.7, 8415, 0.88, 48.5981, 2.441, 5098, 7800, 5)
+    vlp1 = Gray(130, (80+460), 0.673, 53.7, 149.7, 8415, 0.88, 48.5981, 2.441, 5098, 7800, 5)
     #
     #q1 = vlp1._flow_()
     #
@@ -162,8 +166,8 @@ class Gray:
     #flow = vlp1._flow_()
     #print("flow", flow, len(flow))
     #print("\n")
-    #total = vlp1.gray()
-    #print("total", total)
+    total = vlp1.gray()
+    print("total", total)
 #
 #   # import matplotlib.pyplot as plt
 

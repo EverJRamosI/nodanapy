@@ -7,7 +7,11 @@ import numpy as np
 from _properties.gasProperties import GasProperties
 
 class Darcy: 
-    def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, permeability_g: int|float=10, skin: int|float=0, height_formation: int|float=10, well_radius: int|float=0.35, external_radius: int|float=1000, water_cut: float=0.1, gor: int|float=50, amount: int=25):
+    def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
+                permeability_g: int|float=10, skin: int|float=0, height_formation: int|float=10, 
+                well_radius: int|float=0.35, reservoir_radius: int|float=1000, water_cut: float=0.1, 
+                gor: int|float=50, amount: int=25):
+        
         self.pressure = pressure
         self.temperature = temperature
         self.specific_gravity = specific_gravity
@@ -15,7 +19,7 @@ class Darcy:
         self.skin = skin
         self.height_formation = height_formation
         self.well_radius = well_radius
-        self.external_radius = external_radius
+        self.reservoir_radius = reservoir_radius
         self.water_cut = water_cut
         self.gor = gor
         self.amount = amount
@@ -31,7 +35,7 @@ class Darcy:
         
     def _a_flow_(self):
         mu, z = self._properties_gas_()
-        A = ((1424*mu*z*self.temperature)/(self.permeability_g*self.height_formation))*(np.log(0.472*(self.external_radius/self.well_radius))+self.skin)
+        A = ((1424*mu*z*self.temperature)/(self.permeability_g*self.height_formation))*(np.log(0.472*(self.reservoir_radius/self.well_radius))+self.skin)
         return A
         
     def _b_flow_(self): 
