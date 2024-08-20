@@ -10,7 +10,7 @@ class Darcy:
     def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
                 permeability_g: int|float=10, skin: int|float=0, height_formation: int|float=10, 
                 well_radius: int|float=0.35, reservoir_radius: int|float=1000, water_cut: float=0.1, 
-                gor: int|float=50, amount: int=25):
+                go_ratio: int|float=50, amount: int=25):
         
         self.pressure = pressure
         self.temperature = temperature
@@ -21,7 +21,7 @@ class Darcy:
         self.well_radius = well_radius
         self.reservoir_radius = reservoir_radius
         self.water_cut = water_cut
-        self.gor = gor
+        self.go_ratio = go_ratio
         self.amount = amount
         
     def _properties_gas_(self):
@@ -56,9 +56,9 @@ class Darcy:
         
         return np.array(flow_results)
     
-    def darcy(self):
+    def inflow(self):
         qg = self.flow_gas()
-        ql = ((self.gor*qg)/(1-self.water_cut))/1000
+        ql = ((self.go_ratio*qg)/(1-self.water_cut))/1000
         qo = (1-self.water_cut)*ql
         qw = ql-qo
         pwf = self._p_diff_()
@@ -70,7 +70,7 @@ class Darcy:
 
 #     p = ipr1._p_diff_()
 #     q = ipr1.flow_gas()
-#     total = ipr1.darcy()
+#     total = ipr1.inflow()
 #     print(total)
     # import matplotlib.pyplot as plt
 

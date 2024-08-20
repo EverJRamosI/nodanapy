@@ -14,7 +14,7 @@ class WellNA:
     def __init__(self, wellhead_pressure: int|float, wellhead_temperature: int|float, reservoir_pressure: int|float, reservoir_temperature: int|float, *,
                 specific_gravity: float=0.65, permeability: int|float=10, skin: int|float=0, height_formation: int|float=10, 
                 well_radius: int|float=0.35, reservoir_radius: int|float=1000, api: int|float=40, 
-                bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.1, gor: int|float=50, 
+                bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.1, go_ratio: int|float=50, 
                 internal_diameter: int|float=2.5, rugosity: float=0.0001, deep_well: int|float = 5000, amount: int=25):
         
         self.wellhead_pressure = wellhead_pressure
@@ -31,7 +31,7 @@ class WellNA:
         self.bubble_pressure = bubble_pressure
         self.salinity = salinity
         self.water_cut = water_cut
-        self.gor = gor
+        self.go_ratio = go_ratio
         self.internal_diameter = internal_diameter
         self.rugosity = rugosity
         self.deep_well = deep_well
@@ -40,14 +40,14 @@ class WellNA:
     def ipr(self):
         ipr = Darcy(self.reservoir_pressure, self.reservoir_temperature, self.specific_gravity, 
                     self.permeability, self.skin, self.height_formation, self.well_radius, 
-                    self.reservoir_radius, self.water_cut, self.gor, self.amount)
+                    self.reservoir_radius, self.water_cut, self.go_ratio, self.amount)
         ql, qg, qo, qw, pwf = ipr.darcy()
         return {"Ql(bpd)": ql, "Qg(Mscfd)": qg, "Qo(bpd)": qo, "Qw(bpd)": qw, "Pwf(psia)": pwf}
     
     def vlp(self):
         aof = self.ipr()["Qg(Mscfd)"][-1]
         vlp = Gray(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
-                    self.bubble_pressure, self.salinity, self.water_cut, self.gor, self.internal_diameter, self.rugosity, self.deep_well, qg_max=aof, amount=self.amount)
+                    self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, self.rugosity, self.deep_well, qg_max=aof, amount=self.amount)
         ql, qg, qo, qw, pwf = vlp.gray()
         return {"Ql(bpd)": ql, "Qg(Mscfd)": qg, "Qo(bpd)": qo, "Qw(bpd)": qw, "Pwf(psia)": pwf}
 

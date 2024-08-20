@@ -11,7 +11,7 @@ from _properties.waterProperties import WaterProperties
 class Gray:
     def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
                 api: int|float=40, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.1, 
-                gor: int|float=50, internal_diameter: int|float=2.5, rugosity: float=0.0001, deep_well: int|float=500, 
+                go_ratio: int|float=50, internal_diameter: int|float=2.5, rugosity: float=0.0001, deep_well: int|float=500, 
                 qg_max: int|float=10000, amount: int=25):
         
         self.pressure = pressure
@@ -21,7 +21,7 @@ class Gray:
         self.bubble_pressure = bubble_pressure
         self.salinity = salinity
         self.water_cut = water_cut
-        self.gor = gor
+        self.go_ratio = go_ratio
         self.internal_diameter = internal_diameter
         self.rugosity = rugosity
         self.deep_well = deep_well
@@ -50,11 +50,11 @@ class Gray:
         return [mu_water, rho_water, sigma_water]
     
     def _flow_(self):
-        q_lm = ((self.gor*(self.qg_max*1.2))/(1-self.water_cut))/1000
+        q_lm = ((self.go_ratio*(self.qg_max*1.2))/(1-self.water_cut))/1000
         q_liq = np.linspace(1, q_lm, self.amount)
         q_oil = (1-self.water_cut)*q_liq
         q_water = q_liq-q_oil
-        lgr = self.gor/(1-self.water_cut)
+        lgr = self.go_ratio/(1-self.water_cut)
         q_gas = (q_liq*1000)/lgr
         return [q_water, q_oil, q_gas, q_liq]
 
@@ -135,7 +135,7 @@ class Gray:
         pwf = self.pressure + dp_total
         return [dp_total, pwf]
     
-    def gray(self):
+    def outflow(self):
         qw, qo, qg, ql = self._flow_()
         pwf = self.bottom_hole_pressure()[1]
         return [ql, qg, qo, qw, pwf]
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     #flow = vlp1._flow_()
     #print("flow", flow, len(flow))
     #print("\n")
-    total = vlp1.gray()
+    total = vlp1.outflow()
     print("total", total)
 #
 #   # import matplotlib.pyplot as plt
