@@ -24,6 +24,6 @@ class OilProperties:
     def tension_oil(self):
         return pp.sigma_o.baker_swedloff(self.pressure, self.temperature, self.api)
     
-    
-#oil1 = OilProperties(149.7, 544, 0.673, 53.7, 149.7)
-#print(oil1.factor_volumetric_oil())
+if __name__ == "__main__":
+    oil = OilProperties(6500, 544, 0.673, 53.7, 149.7)
+    print(oil.tension_oil())

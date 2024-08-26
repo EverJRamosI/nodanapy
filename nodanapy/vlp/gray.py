@@ -11,7 +11,7 @@ from _properties.waterProperties import WaterProperties
 class Gray:
     def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
                 api: int|float=40, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.1, 
-                go_ratio: int|float=50, internal_diameter: int|float=2.5, rugosity: float=0.0001, deep_well: int|float=500, 
+                go_ratio: int|float=50, internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float=500, 
                 qg_max: int|float=10000, amount: int=25):
         
         self.pressure = pressure
@@ -24,7 +24,7 @@ class Gray:
         self.go_ratio = go_ratio
         self.internal_diameter = internal_diameter
         self.rugosity = rugosity
-        self.deep_well = deep_well
+        self.well_depth = well_depth
         self.qg_max = qg_max
         self.amount = amount
                 
@@ -112,10 +112,11 @@ class Gray:
         G = -2.314*((N1*(1+(205/N2)))**N3)
         holdup = 1-((1-np.exp(G))/(R_v+1))
         rho_holdup = holdup*self._densities_()[0]+self._densities_()[1]*(1-holdup)
-        delta_pressure = (32.17*rho_holdup*self.deep_well)/(144*32.17)
+        delta_pressure = (32.17*rho_holdup*self.well_depth)/(144*32.17)
         return delta_pressure
     
-    def _number_reynolds_(self):
+    def _number_reynolds_(self, rugosity=0.0001):
+        self.rugosity = rugosity
         NRe = (self._densities_()[2]*(self.internal_diameter/12))/(0.000672*self._viscosities_()[4])
         f = (-2*np.log10((1/3.7)*(self.rugosity/self.internal_diameter))+((6.81/NRe)**0.9))**(-2)
         return [NRe, f]
@@ -124,8 +125,9 @@ class Gray:
         R_v = self._velocities_()[1]/self._velocities_()[0]
         rugosity_o = (28.5*self._sigma_tensions_()[2])/(453.592*self._densities_()[2]*((self._velocities_()[2])**2))
         rugosity_e = np.where(R_v>=0.007, rugosity_o, self.rugosity + ((rugosity_o - self.rugosity) / 0.007))
-        friction = self._number_reynolds_()[1]
-        delta_pressure = (friction*((self._velocities_()[2])**2)*self._densities_()[2]*self.deep_well)/(144*2*32.17*(self.internal_diameter/12))
+        self.rugosity = rugosity_e
+        friction = self._number_reynolds_(rugosity=self.rugosity)[1]
+        delta_pressure = (friction*((self._velocities_()[2])**2)*self._densities_()[2]*self.well_depth)/(144*2*32.17*(self.internal_diameter/12))
         return delta_pressure
         
     def bottom_hole_pressure(self):
