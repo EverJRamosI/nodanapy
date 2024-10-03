@@ -19,6 +19,9 @@ class WaterProperties:
     def tension_water(self):
         return pp.sigma_w.jennings_newman(self.pressure, self.temperature)
     
+    def solution_water(self):
+        return pp.Rsw.culberson_macketta(self.pressure, self.temperature, S=self.salinity)
+    
     
     
 #water1 = WaterProperties(149.7, (85+460), 8415)
