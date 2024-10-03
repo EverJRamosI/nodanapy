@@ -115,7 +115,7 @@ class HagedornBrown:
         v_m = v_sl + v_sg
         return [v_sl, v_sg, v_m]
     
-    def _holdup_(self):
+    def holdup(self):
         self._properties_liquid_()
         vsl, vsg, vm = self._velocities_()
         
@@ -160,12 +160,12 @@ class HagedornBrown:
     def _rho_m_(self):
         self._properties_()
         self._properties_liquid_()
-        Hl = self._holdup_()
+        Hl = self.holdup()
         return self.rho_liq*Hl+self.rho_gas*(1-Hl)
     
     def _number_reynolds_(self):
         *_, q_liq = self._flow_()
-        Hl = self._holdup_()
+        Hl = self.holdup()
         M = self.sg_oil*350.52*(1/(1+self.wo_ratio)) + (self.rho_water/62.42)*350.52*(self.wo_ratio/(1+self.wo_ratio)) + self.specific_gravity*0.0764*self.gl_ratio
         NRe = 2.2e-2*((q_liq*15387*M)/((self.internal_diameter/12)*(self.mu_liq**Hl)*(self.mu_gas**(1-Hl))))
         if NRe < 4000:
@@ -189,7 +189,7 @@ class HagedornBrown:
         pn = self.pressure
         
         p = [pn]
-        hl = [self._holdup_()]
+        hl = [self.holdup()]
         dpt = [self.pressure_drop_total()]
 
         dz_array = np.diff(self.delta_depth)
@@ -199,7 +199,7 @@ class HagedornBrown:
 
             pi = dpt[i-1] * dz + p[i-1]
             self.pressure = pi
-            h_n = self._holdup_()
+            h_n = self.holdup()
             dP_n = self.pressure_drop_total()
             
             p.append(pi)
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     well = HagedornBrown(480, (100+460), bubble_pressure=1500)
     
     #print(well._sigma_tensions_())
-    #print(well._holdup_())
+    #print(well.holdup())
     #print(well._properties_oil_())
     #print(well._velocities_())
     #print(well._number_reynolds_())
