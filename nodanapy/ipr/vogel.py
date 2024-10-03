@@ -97,9 +97,9 @@ class Vogel:
         return [ql, qg, qo, qw, pwf]
     
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
     
-#     well1 = Vogel(5651, 590, permeability=8.2, height_formation=53, reservoir_radius=2980, go_ratio=85, skin=5)
+    well1 = Vogel(5651, 590, permeability=8.2, height_formation=53, reservoir_radius=2980, go_ratio=85, skin=5)
     
 #     print(well1.productivity_index())
 #     print(well1._flow_bif_())
