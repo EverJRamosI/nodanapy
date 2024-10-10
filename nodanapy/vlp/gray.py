@@ -40,41 +40,19 @@ class Gray:
         self.delta_qg = np.linspace(self.qg_i, self.qg_n, self.amount)
         self.delta_depth = np.linspace(0, self.well_depth, self.amount)
         self.delta_t = self._delta_temp_()
+        
+        self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
+        self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
+        self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
     
     def _delta_temp_(self):
         gradient = np.abs((self.temperature-self.temperature_node))/self.well_depth
         return self.temperature + gradient*self.delta_depth
-    
-    def _properties_(self):
-        properties_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
-        self.mu_gas = properties_gas.viscosity_gas()
-        self.fvf_gas = properties_gas.factor_volumetric_gas()
-        self.rho_gas = properties_gas.density_gas()
-        self.z_gas = properties_gas.factor_compressibility_gas()
-        
-        properties_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
-        self.mu_oil = properties_oil.viscosity_oil()
-        self.rho_oil = properties_oil.density_oil()
-        self.sigma_oil = properties_oil.tension_oil()
-        if self.sigma_oil < 1:
-            self.sigma_oil = 1
-        self.rs_oil = properties_oil.solution_oil()
-        self.fvf_oil = properties_oil.factor_volumetric_oil()
-    
-        properties_water = WaterProperties(self.pressure, self.temperature, self.salinity)
-        self.mu_water = properties_water.viscosity_water()
-        self.rho_water = properties_water.density_water()
-        self.sigma_water = properties_water.tension_water()
-        if self.sigma_water < 1:
-            self.sigma_water = 1
-        self.rs_water = properties_water.solution_water()
-        self.fvf_water = properties_water.factor_volumetric_water()
         
     def _flow_(self):
-        self._properties_()
-        q_gas = ((self.fvf_gas*self.qg_i)/1000)/15387
-        q_oil = (self.fvf_oil*(self.qg_i/1000)/self.go_ratio)/15387
-        q_water = (self.fvf_water*self.wg_ratio*(self.qg_i/1000))/15387
+        q_gas = ((self._prop_gas.factor_volumetric_gas()*self.qg_i)/1000)/15387
+        q_oil = (self._prop_oil.factor_volumetric_oil()*(self.qg_i/1000)/self.go_ratio)/15387
+        q_water = (self._prop_water.factor_volumetric_water()*self.wg_ratio*(self.qg_i/1000))/15387
         q_liq = q_oil + q_water
         return [q_water, q_oil, q_gas, q_liq]
 
@@ -98,23 +76,30 @@ class Gray:
         return [lamb_liq, lamb_gas]
     
     def _properties_liquid_(self):
-        self._properties_()
         f_o, f_w = self._fractions_liquid_()
         lamb_liq, lamb_gas = self._no_slip_holdup_()
-        rho_liq = self.rho_oil*f_o+self.rho_water*f_w
-        rho_ns = rho_liq*lamb_liq+self.rho_gas*lamb_gas
+        rho_liq = self._prop_oil.density_oil()*f_o+self._prop_water.density_water()*f_w
+        rho_ns = rho_liq*lamb_liq+self._prop_gas.density_gas()*lamb_gas
+        sigma_oil = self._prop_oil.tension_oil()
+        if sigma_oil < 1:
+            sigma_oil = 1
+        sigma_water = self._prop_water.tension_water()
+        if sigma_water < 1:
+            sigma_water = 1
+        sigma_liq = (f_o*sigma_oil+0.617*f_w*sigma_water)/(f_o+0.617*f_w)
 
-        sigma_liq = (f_o*self.sigma_oil+0.617*f_w*self.sigma_water)/(f_o+0.617*f_w)
-
-        mu_liq = self.mu_water*f_w + self.mu_oil*f_o
-        mu_ns = self.mu_gas*lamb_gas+mu_liq*lamb_liq
+        mu_liq = self._prop_water.viscosity_water()*f_w + self._prop_oil.viscosity_oil()*f_o
+        mu_ns = self._prop_gas.viscosity_gas()*lamb_gas+mu_liq*lamb_liq
         return [rho_liq, rho_ns, sigma_liq, mu_liq, mu_ns]
     
     def holdup(self):
         rho_liq, rho_ns, sigma_liq, *_ = self._properties_liquid_()
         v_sg, v_sl, v_m = self._velocities_()
-        N1 = 453.592*(((rho_ns**2)*(v_m**4))/(32.17*sigma_liq*(rho_liq-self.rho_gas)))
-        N2 = 453.592*((32.17*(rho_liq-self.rho_gas)*(self.internal_diameter/12))/(self.sigma_oil))
+        sigma_oil = self._prop_oil.tension_oil()
+        if sigma_oil < 1:
+            sigma_oil = 1
+        N1 = 453.592*(((rho_ns**2)*(v_m**4))/(32.17*sigma_liq*(rho_liq-self._prop_gas.density_gas())))
+        N2 = 453.592*((32.17*(rho_liq-self._prop_gas.density_gas())*(self.internal_diameter/12))/(sigma_oil))
         R_v = v_sl/v_sg
         N3 = 0.0814*(1-0.0554*np.log(1+((730*R_v)/(R_v+1))))
         G = -2.314*((N1*(1+(205/N2)))**N3)
@@ -124,7 +109,7 @@ class Gray:
     def _rho_m_(self):
         rho_liq, *_ = self._properties_liquid_()
         holdup = self.holdup()
-        return holdup*rho_liq+self.rho_gas*(1-holdup)
+        return holdup*rho_liq+self._prop_gas.density_gas()*(1-holdup)
     
     def pressure_drop_elevation(self):
         rho_holdup = self._rho_m_()
@@ -136,9 +121,9 @@ class Gray:
         v_sg, v_sl, v_m = self._velocities_()
         rho_liq, rho_ns, sigma_liq, mu_liq, mu_ns = self._properties_liquid_()
         Hl = self.holdup()
-        M = self.sg_oil*350.52*(1/(1+self.wo_ratio)) + (self.rho_water/62.42)*350.52*(self.wo_ratio/(1+self.wo_ratio)) + self.specific_gravity*0.0764*self.gl_ratio
+        M = self.sg_oil*350.52*(1/(1+self.wo_ratio)) + (self._prop_water.density_water()/62.42)*350.52*(self.wo_ratio/(1+self.wo_ratio)) + self.specific_gravity*0.0764*self.gl_ratio
         R_v = v_sl/v_sg
-        NRe = 2.2e-2*((q_liq*15387*M)/((self.internal_diameter/12)*(mu_liq**Hl)*(self.mu_gas**(1-Hl))))
+        NRe = 2.2e-2*((q_liq*15387*M)/((self.internal_diameter/12)*(mu_liq**Hl)*(self._prop_gas.viscosity_gas()**(1-Hl))))
         #NRe = (rho_ns*v_m*(self.internal_diameter/12))/(0.000672*mu_ns)
         rugosity_o = (28.5*sigma_liq)/(453.592*rho_ns*((v_m)**2))
         if R_v >= 0.007:
@@ -172,6 +157,9 @@ class Gray:
 
             pi = dpt[i-1] * dz + p[i-1]
             self.pressure = pi
+            self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
+            self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
+            self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
             h_n = self.holdup()
             dP_n = self.pressure_drop_total()
             
@@ -209,7 +197,7 @@ if __name__ == "__main__":
     # print(well._properties_())
     #print(well._flow_())
     #print(well._velocities_())
-    print(well.outflow())
+    #print(well.outflow())
 
     #import matplotlib.pyplot as plt
 
@@ -225,6 +213,6 @@ if __name__ == "__main__":
     # ax[2].plot(hl, h)
     # plt.show()
     
-    # ql, qg, qo, qw, pw = well.outflow()
-    # plt.plot(qg, pw)
-    # plt.show()
+    #ql, qg, qo, qw, pw = well.outflow()
+    #plt.plot(qg, pw)
+    #plt.show()
