@@ -39,73 +39,34 @@ class HagedornBrown:
         self.delta_depth = np.linspace(0, self.well_depth, self.amount)
         self.delta_t = self._delta_temp_()
         
-        self.mu_gas = None
-        self.fvf_gas = None
-        self.rho_gas = None
-        self.z_gas = None
-        
-        self.mu_oil = None
-        self.rho_oil = None
-        self.sigma_oil = None
-        self.rs_oil = None
-        self.fvf_oil = None
-        
-        self.mu_water = None
-        self.rho_water = None
-        self.sigma_water = None
-        self.rs_water = None
-        self.fvf_water = None
-        
-        self.rho_liq = None
-        self.mu_liq = None
-        self.sigma_liq = None
-        
+        self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
+        self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
+        self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
     
     def _delta_temp_(self):
         gradient = np.abs((self.temperature-self.temperature_node))/self.well_depth
         return self.temperature + gradient*self.delta_depth
-    
-    def _properties_(self):
-        properties_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
-        self.mu_gas = properties_gas.viscosity_gas()
-        self.fvf_gas = properties_gas.factor_volumetric_gas()
-        self.rho_gas = properties_gas.density_gas()
-        self.z_gas = properties_gas.factor_compressibility_gas()
-    
-        properties_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, bubble_pressure=self.bubble_pressure)
-        self.mu_oil = properties_oil.viscosity_oil()
-        self.rho_oil = properties_oil.density_oil()
-        self.sigma_oil = properties_oil.tension_oil()
-        if self.sigma_oil < 1:
-            self.sigma_oil = 1
-        self.rs_oil = properties_oil.solution_oil()
-        self.fvf_oil = properties_oil.factor_volumetric_oil()
-        
-        properties_water = WaterProperties(self.pressure, self.temperature, self.salinity)
-        self.mu_water = properties_water.viscosity_water()
-        self.rho_water = properties_water.density_water()
-        self.sigma_water = properties_water.tension_water()
-        if self.sigma_water < 1:
-            self.sigma_water = 1
-        self.rs_water = properties_water.solution_water()
-        self.fvf_water = properties_water.factor_volumetric_water()
         
     def _properties_liquid_(self):
-        self._properties_()
-        self.rho_liq = self.rho_oil*(1/(1+self.wo_ratio)) + self.rho_water*(self.wo_ratio/(1+self.wo_ratio))
-        self.mu_liq = self.mu_oil*(1/(1+self.wo_ratio)) + self.mu_water*(self.wo_ratio/(1+self.wo_ratio))
-        self.sigma_liq = self.sigma_oil*(1/(1+self.wo_ratio)) + self.sigma_water*(self.wo_ratio/(1+self.wo_ratio))
+        self.rho_liq = self._prop_oil.density_oil()*(1/(1+self.wo_ratio)) + self._prop_water.density_water()*(self.wo_ratio/(1+self.wo_ratio))
+        self.mu_liq = self._prop_oil.viscosity_oil()*(1/(1+self.wo_ratio)) + self._prop_water.viscosity_water()*(self.wo_ratio/(1+self.wo_ratio))
+        sigma_oil = self._prop_oil.tension_oil()
+        if sigma_oil < 1:
+            sigma_oil = 1
+        sigma_water = self._prop_water.tension_water()
+        if sigma_water < 1:
+            sigma_water = 1
+        self.sigma_liq = sigma_oil*(1/(1+self.wo_ratio)) + sigma_water*(self.wo_ratio/(1+self.wo_ratio))
     
     def _flow_(self):
-        self._properties_()
-        q_oil = (self.fvf_oil*self.qo_i)/15387
-        q_water = (self.fvf_water*self.wo_ratio*self.qo_i)/15387
+        q_oil = (self._prop_oil.factor_volumetric_oil()*self.qo_i)/15387
+        q_water = (self._prop_water.factor_volumetric_water()*self.wo_ratio*self.qo_i)/15387
         q_liq = q_oil+q_water
         #if (self.go_ratio - self.rs_oil) < 0:
         #    q_gas = 0
         #else:
         #    q_gas = self.fvf_gas*(self.go_ratio-self.rs_oil-(self.rs_water*self.wo_ratio))*self.qo_i/86400
-        q_gas = (self.fvf_gas*self.qo_i*self.go_ratio)/86400
+        q_gas = (self._prop_gas.factor_volumetric_gas()*self.qo_i*self.go_ratio)/15387
         return [q_water, q_oil, q_gas, q_liq]
     
     def _velocities_(self):
@@ -158,16 +119,15 @@ class HagedornBrown:
         return holdup_liq
     
     def _rho_m_(self):
-        self._properties_()
         self._properties_liquid_()
         Hl = self.holdup()
-        return self.rho_liq*Hl+self.rho_gas*(1-Hl)
+        return self.rho_liq*Hl+self._prop_gas.density_gas()*(1-Hl)
     
     def _number_reynolds_(self):
         *_, q_liq = self._flow_()
         Hl = self.holdup()
-        M = self.sg_oil*350.52*(1/(1+self.wo_ratio)) + (self.rho_water/62.42)*350.52*(self.wo_ratio/(1+self.wo_ratio)) + self.specific_gravity*0.0764*self.gl_ratio
-        NRe = 2.2e-2*((q_liq*15387*M)/((self.internal_diameter/12)*(self.mu_liq**Hl)*(self.mu_gas**(1-Hl))))
+        M = self.sg_oil*350.52*(1/(1+self.wo_ratio)) + (self._prop_water.density_water()/62.42)*350.52*(self.wo_ratio/(1+self.wo_ratio)) + self.specific_gravity*0.0764*self.gl_ratio
+        NRe = 2.2e-2*((q_liq*15387*M)/((self.internal_diameter/12)*(self.mu_liq**Hl)*(self._prop_gas.viscosity_gas()**(1-Hl))))
         if NRe < 4000:
             f = (-2*np.log10((1/3.7)*(self.rugosity/self.internal_diameter))+((6.81/NRe)**0.9))**(-2)
         else:
@@ -175,10 +135,9 @@ class HagedornBrown:
         return [NRe, f]
     
     def pressure_drop_friction(self):
-        self._properties_()
         *_, q_liq = self._flow_()
         friction = self._number_reynolds_()[1]
-        M = self.sg_oil*350.52*(1/(1+self.wo_ratio)) + (self.rho_water/62.42)*350.52*(self.wo_ratio/(1+self.wo_ratio)) + self.specific_gravity*0.0764*self.gl_ratio
+        M = self.sg_oil*350.52*(1/(1+self.wo_ratio)) + (self._prop_water.density_water()/62.42)*350.52*(self.wo_ratio/(1+self.wo_ratio)) + self.specific_gravity*0.0764*self.gl_ratio
         delta_pressure = (friction*(M**2)*((q_liq*15387)**2))/(7.413e10*((self.internal_diameter/12)**5)*self._rho_m_())
         return delta_pressure
     
@@ -199,6 +158,9 @@ class HagedornBrown:
 
             pi = dpt[i-1] * dz + p[i-1]
             self.pressure = pi
+            self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
+            self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
+            self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
             h_n = self.holdup()
             dP_n = self.pressure_drop_total()
             
@@ -232,27 +194,12 @@ class HagedornBrown:
 
     
 if __name__ == "__main__":
-    well = HagedornBrown(480, (100+460), bubble_pressure=1500)
-    
-    #print(well._sigma_tensions_())
-    #print(well.holdup())
-    #print(well._properties_oil_())
-    #print(well._velocities_())
-    #print(well._number_reynolds_())
-    #print(well._rho_m_())
-    #print(well.pressure_drop_gravity())
-    #print(well.pressure_drop_friction())
-    #print(well.bottom_hole_pressure())
-    #print(well.outflow())
-    #print(well.delta_t)
+    #import time
+    #time_start = time.time()    
+    well = HagedornBrown(580, (100+560), qo_i=50)
     
     #print(well.pressure_traverse_new())
     #print(well.outflow())
-    #print(well._number_reynolds_())
-    # qg = well.outflow()[1]
-    # pwf = well.outflow()[4]
-    # print("Qg", qg)
-    # print("Pwf", pwf)
     
     #import matplotlib.pyplot as plt
     #
@@ -270,6 +217,8 @@ if __name__ == "__main__":
     # ax[0].plot(dp, h)
     # ax[1].plot(p, h)
     # ax[2].plot(hl, h)
+    # time_end = time.time()
+    # print('Time', time_end - time_start)
     # plt.show()
     
     
