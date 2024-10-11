@@ -35,78 +35,41 @@ class BeggsBrill:
         self.sg_oil = 141.5/(131.5+self.api)
         self.gl_ratio = (self.go_ratio)/(self.wo_ratio+1)
         self.area = np.pi/4*((self.internal_diameter/12)**2)
+        self.angle_value = (self.angle*np.pi)/180
         
         self.delta_qo = np.linspace(self.qo_i, self.qo_n, self.amount)
         self.delta_depth = np.linspace(0, self.well_depth, self.amount)
         self.delta_t = self._delta_temp_()
         
-        self.mu_gas = None
-        self.fvf_gas = None
-        self.rho_gas = None
-        self.z_gas = None
+        self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
+        self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, bubble_pressure=self.bubble_pressure)
+        self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
         
-        self.mu_oil = None
-        self.rho_oil = None
-        self.sigma_oil = None
-        self.rs_oil = None
-        self.fvf_oil = None
-        
-        self.mu_water = None
-        self.rho_water = None
-        self.sigma_water = None
-        self.rs_water = None
-        self.fvf_water = None
-        
-        self.rho_liq = None
-        self.mu_liq = None
-        self.sigma_liq = None
         
     def _delta_temp_(self):
         gradient = np.abs((self.temperature-self.temperature_node))/self.well_depth
         return self.temperature + gradient*self.delta_depth
-        
-    def _properties_(self):
-        properties_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
-        self.mu_gas = properties_gas.viscosity_gas()
-        self.fvf_gas = properties_gas.factor_volumetric_gas()
-        self.rho_gas = properties_gas.density_gas()
-        self.z_gas = properties_gas.factor_compressibility_gas()
-    
-        properties_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, None, self.bubble_pressure)
-        self.mu_oil = properties_oil.viscosity_oil()
-        self.rho_oil = properties_oil.density_oil()
-        self.sigma_oil = properties_oil.tension_oil()
-        if self.sigma_oil < 1:
-            self.sigma_oil = 1
-        self.rs_oil = properties_oil.solution_oil()
-        self.fvf_oil = properties_oil.factor_volumetric_oil()
-    
-        properties_water = WaterProperties(self.pressure, self.temperature, self.salinity)
-        self.mu_water = properties_water.viscosity_water()
-        self.rho_water = properties_water.density_water()
-        self.sigma_water = properties_water.tension_water()
-        if self.sigma_water < 1:
-            self.sigma_water = 1
-        self.rs_water = properties_water.solution_water()
-        self.fvf_water = properties_water.factor_volumetric_water()
-    
     
     def _properties_liquid_(self):
-        self._properties_()
-        self.rho_liq = self.rho_oil*(1/(1+self.wo_ratio)) + self.rho_water*(self.wo_ratio/(1+self.wo_ratio))
-        self.mu_liq = self.mu_oil*(1/(1+self.wo_ratio)) + self.mu_water*(self.wo_ratio/(1+self.wo_ratio))
-        self.sig_liq = self.sigma_oil*(1/(1+self.wo_ratio)) + self.sigma_water*(self.wo_ratio/(1+self.wo_ratio))
+        self.rho_liq = self._prop_oil.density_oil()*(1/(1+self.wo_ratio)) + self._prop_water.density_water()*(self.wo_ratio/(1+self.wo_ratio))
+        self.mu_liq = self._prop_oil.viscosity_oil()*(1/(1+self.wo_ratio)) + self._prop_water.viscosity_water()*(self.wo_ratio/(1+self.wo_ratio))
+        sigma_oil = self._prop_oil.tension_oil()
+        if sigma_oil < 1:
+            sigma_oil = 1
+        sigma_water = self._prop_water.tension_water()
+        if sigma_water < 1:
+            sigma_water = 1
+        self.sig_liq = sigma_oil*(1/(1+self.wo_ratio)) + sigma_water*(self.wo_ratio/(1+self.wo_ratio))
     
     def _flow_(self):
-        self._properties_()
-        q_oil = (self.fvf_oil*self.qo_i)/15387
-        q_water = (self.fvf_water*self.wo_ratio*self.qo_i)/15387
+        q_oil = (self._prop_oil.factor_volumetric_oil()*self.qo_i)/15387
+        q_water = (self._prop_water.factor_volumetric_water()*self.wo_ratio*self.qo_i)/15387
         q_liq = q_oil+q_water
         #if (self.go_ratio - rs_o) < 0:
         #    q_gas = 0
         #else:
         #    q_gas = bg*(self.go_ratio-rs_o-(rs_w*WOR))*self.qo/86400
-        q_gas = (self.fvf_gas*self.qo_i*self.go_ratio)/86400
+        q_gas = (self._prop_gas.factor_volumetric_gas()*self.qo_i*self.go_ratio)/15387
         return [q_water, q_oil, q_gas, q_liq]
     
     def _velocities_(self):
@@ -128,7 +91,7 @@ class BeggsBrill:
         L3 = 0.10*(lambda_liq**(-1.4516))
         L4 = 0.5*(lambda_liq**(-6.738))
         return [Nfr, Nlv, L1, L2, L3, L4, lambda_liq, lambda_gas]
-        
+    
     def _regime_(self):
         nfr, _, l1, l2, l3, l4, lambl, _ = self._flow_regime_()
         
@@ -196,23 +159,21 @@ class BeggsBrill:
             return holdup_liq
         #holdup_liquid = np.array([hold_l(nfr_val, nlv_val, lambl_val, regime_val, l2_val, l3_val) for nfr_val, nlv_val, lambl_val, regime_val, l2_val, l3_val in zip(nfr, nlv, lamb_liq, regime, l2, l3)])
         holdup_liquid = hold_l(nfr, nlv, lamb_liq, regime, l2, l3)
-        
         return holdup_liquid       
-        
+    
     def _properties_mixture_(self):
-        self._properties_()
         self._properties_liquid_()
         *_, lmbd_l, lmbd_g = self._flow_regime_()
         h_l = self.holdup()
-        rho_m = self.rho_liq*lmbd_l + self.rho_gas*lmbd_g
-        mu_m = self.mu_liq*lmbd_l + self.mu_gas*lmbd_g
-        rho_mis = self.rho_liq*h_l + self.rho_gas*(1-h_l)
+        rho_m = self.rho_liq*lmbd_l + self._prop_gas.density_gas()*lmbd_g
+        mu_m = self.mu_liq*lmbd_l + self._prop_gas.viscosity_gas()*lmbd_g
+        rho_mis = self.rho_liq*h_l + self._prop_gas.density_gas()*(1-h_l)
         return [rho_m, mu_m, rho_mis]
     
     def _number_reynolds_(self):
         *_, v_m = self._velocities_()
         rho_m, mu_m, _ = self._properties_mixture_()
-        lmbd_l = self._flow_regime_()[-2]
+        *_, lmbd_l, _ = self._flow_regime_()
         h_l = self.holdup()
         NRe = (1488*rho_m*v_m*(self.internal_diameter/12))/(mu_m)
         fn = (-2*np.log10((1/3.7)*(self.rugosity/self.internal_diameter))+((6.81/NRe)**0.9))**(-2)
@@ -230,27 +191,22 @@ class BeggsBrill:
         return [NRe, ft]
     
     def pressure_drop_potential(self):
-        angle_value = (self.angle*np.pi)/180
         rho_mis = self._properties_mixture_()[-1]
-        delta_pressure = (rho_mis*np.sin(angle_value))/144
-        return delta_pressure
+        return (rho_mis*np.sin(self.angle_value))/144
     
     def pressure_drop_friction(self):
         rho_mis = self._properties_mixture_()[-1]
         v_m = self._velocities_()[2]
         ft = self._number_reynolds_()[1]
-        delta_pressure = 2*ft*rho_mis*(v_m**2) / 32.17 / (self.internal_diameter/12) / 144
-        return delta_pressure
+        return 2*ft*rho_mis*(v_m**2) / 32.17 / (self.internal_diameter/12) / 144
     
     def kinetic_factor(self):
         v_sl, v_sg, v_m = self._velocities_()
         rho_mis = self._properties_mixture_()[-1]
-        Ek = v_m*v_sg*rho_mis / 32.17 / self.pressure / 144
-        return Ek
+        return v_m*v_sg*rho_mis / 32.17 / self.pressure / 144
     
     def pressure_drop_total(self):
-        dp_total = (self.pressure_drop_potential() + self.pressure_drop_friction()) / (1 - self.kinetic_factor())
-        return dp_total
+        return (self.pressure_drop_potential() + self.pressure_drop_friction()) / (1 - self.kinetic_factor())
     
     def pressure_traverse(self):
         pn = self.pressure
@@ -266,6 +222,9 @@ class BeggsBrill:
 
             pi = dpt[i-1] * dz + p[i-1]
             self.pressure = pi
+            self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
+            self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, bubble_pressure=self.bubble_pressure)
+            self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
             h_n = self.holdup()
             dP_n = self.pressure_drop_total()
             
@@ -299,50 +258,32 @@ class BeggsBrill:
         
             
 if __name__ == "__main__":
-    
-    well = BeggsBrill(450, (100+460), bubble_pressure=1500, water_cut=0.5)
-    #well._flow_(500)
-    #print(well._delta_temp_())
-    #print(well._delta_depth_())
-    #print(well._properties_oil_())
-    #print(well._flow_())
-    #print(well._velocities_())
-    #print(well._flow_regime_())
-    #print(well._regime_())
-    #print(well.holdup())
-    
-    #print(well._delta_flow_())
-    
-    #print(well._number_reynolds_())
-    #print(well.pressure_drop_friction())
-    #print(well.pressure_drop_total())
+    #import time
+    #time_start = time.time()
+    well = BeggsBrill(450, (100+460), qo_i=1500, bubble_pressure=1500)
     
     #print(well.pressure_traverse())
     
-    #dp = well._pressure_traverse_iter_()[0]
-    #dh = well._pressure_traverse_iter_()[3]
-    #print(dp, dh)
-    #q = well._delta_flow_()
-    #p = well.bottom_hole_pressure()
-    #print(q, p)
     #print(well.outflow())
+    #import matplotlib.pyplot as plt
     
-    import matplotlib.pyplot as plt
-    #
-    ql, qg, qo, qw, pw = well.outflow()
-    print(ql, qg, qo, qw, pw)
-    plt.plot(qo, pw)
-    plt.show()
-    
-    #h = well.delta_depth
-    #p, dp, hl = well.pressure_traverse()
-    #print(p, dp, hl, h)
-    #fig, ax = plt.subplots(1, 3)
-    #ax[0].invert_yaxis()
-    #ax[1].invert_yaxis()
-    #ax[2].invert_yaxis()
-    #ax[0].plot(p, h)
-    #ax[1].plot(dp, h)
-    #ax[2].plot(hl, h)
+    # ql, qg, qo, qw, pw = well.outflow()
+    # print(ql, qg, qo, qw, pw)
+    # plt.plot(qo, pw)
     #plt.show()
+    
+    # h = well.delta_depth
+    # p, dp, hl = well.pressure_traverse()
+    # print(p, dp, hl, h)
+    # fig, ax = plt.subplots(1, 3)
+    # ax[0].invert_yaxis()
+    # ax[1].invert_yaxis()
+    # ax[2].invert_yaxis()
+    # ax[0].plot(p, h)
+    # ax[1].plot(dp, h)
+    # ax[2].plot(hl, h)
+    
+    # time_end = time.time()
+    # print('time', time_end-time_start)
+    # plt.show()
     
