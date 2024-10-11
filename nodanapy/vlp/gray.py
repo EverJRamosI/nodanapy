@@ -42,7 +42,7 @@ class Gray:
         self.delta_t = self._delta_temp_()
         
         self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
-        self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
+        self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, bubble_pressure=self.bubble_pressure)
         self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
     
     def _delta_temp_(self):
@@ -137,8 +137,7 @@ class Gray:
         *_, v_m = self._velocities_()
         rho_liq, rho_ns, *_ = self._properties_liquid_()
         friction = self._number_reynolds_()[1]
-        delta_pressure = rho_ns*(friction*((v_m)**2))/(2*32.17*(self.internal_diameter/12))
-        return delta_pressure
+        return rho_ns*(friction*((v_m)**2))/(2*32.17*(self.internal_diameter/12))
     
     def pressure_drop_total(self):
         return (self.pressure_drop_friction() + self._rho_m_())/144
@@ -158,7 +157,7 @@ class Gray:
             pi = dpt[i-1] * dz + p[i-1]
             self.pressure = pi
             self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
-            self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
+            self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, bubble_pressure=self.bubble_pressure)
             self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
             h_n = self.holdup()
             dP_n = self.pressure_drop_total()
@@ -186,14 +185,15 @@ class Gray:
             pwfi.append(pwf[-1])
             qoi.append(q_o*15387)
             qwi.append(q_w*15387)
-            qgi.append(q_g*15387*1e3)
+            qgi.append(q_g*86400)
             qli.append(q_l*15387)
             
         return [np.array(qli), np.array(qgi), np.array(qoi), np.array(qwi), np.array(pwfi)]
 
 if __name__ == "__main__":
-    
-    well = Gray(480, (100+460),)# 0.673, 53.7, 149.7, 8415, 0.88, 48.5981, 2.441, 5098, 7800, 5)
+    #import time
+    #time_start = time.time()
+    well = Gray(480, (100+460), qg_i=100)# 0.673, 53.7, 149.7, 8415, 0.88, 48.5981, 2.441, 5098, 7800, 5)
     # print(well._properties_())
     #print(well._flow_())
     #print(well._velocities_())
@@ -201,18 +201,21 @@ if __name__ == "__main__":
 
     #import matplotlib.pyplot as plt
 
-    # h = well.delta_depth
-    # p, dp, hl = well.pressure_traverse()
-    
-    # fig, ax = plt.subplots(1, 3)
-    # ax[0].invert_yaxis()
-    # ax[1].invert_yaxis()
-    # ax[2].invert_yaxis()
-    # ax[0].plot(dp, h)
-    # ax[1].plot(p, h)
-    # ax[2].plot(hl, h)
-    # plt.show()
+    #h = well.delta_depth
+    #p, dp, hl = well.pressure_traverse()
+    #
+    #fig, ax = plt.subplots(1, 3)
+    #ax[0].invert_yaxis()
+    #ax[1].invert_yaxis()
+    #ax[2].invert_yaxis()
+    #ax[0].plot(dp, h)
+    #ax[1].plot(p, h)
+    #ax[2].plot(hl, h)
+    #plt.show()
     
     #ql, qg, qo, qw, pw = well.outflow()
+    #print(ql, qg, qo, qw, pw)
     #plt.plot(qg, pw)
+    #time_end = time.time()
+    #print('time', time_end-time_start)
     #plt.show()
