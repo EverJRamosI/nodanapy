@@ -40,7 +40,7 @@ class HagedornBrown:
         self.delta_t = self._delta_temp_()
         
         self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
-        self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
+        self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, bubble_pressure=self.bubble_pressure)
         self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
     
     def _delta_temp_(self):
@@ -159,7 +159,7 @@ class HagedornBrown:
             pi = dpt[i-1] * dz + p[i-1]
             self.pressure = pi
             self._prop_gas = GasProperties(self.pressure, self.temperature, self.specific_gravity)
-            self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, self.bubble_pressure)
+            self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, bubble_pressure=self.bubble_pressure)
             self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
             h_n = self.holdup()
             dP_n = self.pressure_drop_total()
@@ -196,16 +196,19 @@ class HagedornBrown:
 if __name__ == "__main__":
     #import time
     #time_start = time.time()    
-    well = HagedornBrown(580, (100+560), qo_i=50)
+    well = HagedornBrown(580, (100+560), bubble_pressure=1500)
     
     #print(well.pressure_traverse_new())
     #print(well.outflow())
     
-    #import matplotlib.pyplot as plt
-    #
-    #ql, qg, qo, qw, pw = well.outflow()
-    #print(ql, qg, qo, qw, pw)
-    #plt.plot(qo, pw)
+    # import matplotlib.pyplot as plt
+    
+    # ql, qg, qo, qw, pw = well.outflow()
+    # print(ql, qg, qo, qw, pw)
+    # time_end = time.time()
+    # print('Time', time_end - time_start)
+    # plt.plot(qo, pw)
+    
     # h = well.delta_depth
     # p, dp, hl = well.pressure_traverse()
     # print(h, p, dp, hl)
@@ -217,8 +220,6 @@ if __name__ == "__main__":
     # ax[0].plot(dp, h)
     # ax[1].plot(p, h)
     # ax[2].plot(hl, h)
-    # time_end = time.time()
-    # print('Time', time_end - time_start)
-    # plt.show()
+    #plt.show()
     
     
