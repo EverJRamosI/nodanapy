@@ -69,7 +69,7 @@ class BeggsBrill:
         #    q_gas = 0
         #else:
         #    q_gas = bg*(self.go_ratio-rs_o-(rs_w*WOR))*self.qo/86400
-        q_gas = (self._prop_gas.factor_volumetric_gas()*self.qo_i*self.go_ratio)/86400
+        q_gas = (self._prop_gas.factor_volumetric_gas()*self.qo_i*self.go_ratio)/15387
         return [q_water, q_oil, q_gas, q_liq]
     
     def _velocities_(self):
@@ -159,7 +159,6 @@ class BeggsBrill:
             return holdup_liq
         #holdup_liquid = np.array([hold_l(nfr_val, nlv_val, lambl_val, regime_val, l2_val, l3_val) for nfr_val, nlv_val, lambl_val, regime_val, l2_val, l3_val in zip(nfr, nlv, lamb_liq, regime, l2, l3)])
         holdup_liquid = hold_l(nfr, nlv, lamb_liq, regime, l2, l3)
-        
         return holdup_liquid       
     
     def _properties_mixture_(self):
@@ -193,25 +192,21 @@ class BeggsBrill:
     
     def pressure_drop_potential(self):
         rho_mis = self._properties_mixture_()[-1]
-        delta_pressure = (rho_mis*np.sin(self.angle_value))/144
-        return delta_pressure
+        return (rho_mis*np.sin(self.angle_value))/144
     
     def pressure_drop_friction(self):
         rho_mis = self._properties_mixture_()[-1]
         v_m = self._velocities_()[2]
         ft = self._number_reynolds_()[1]
-        delta_pressure = 2*ft*rho_mis*(v_m**2) / 32.17 / (self.internal_diameter/12) / 144
-        return delta_pressure
+        return 2*ft*rho_mis*(v_m**2) / 32.17 / (self.internal_diameter/12) / 144
     
     def kinetic_factor(self):
         v_sl, v_sg, v_m = self._velocities_()
         rho_mis = self._properties_mixture_()[-1]
-        Ek = v_m*v_sg*rho_mis / 32.17 / self.pressure / 144
-        return Ek
+        return v_m*v_sg*rho_mis / 32.17 / self.pressure / 144
     
     def pressure_drop_total(self):
-        dp_total = (self.pressure_drop_potential() + self.pressure_drop_friction()) / (1 - self.kinetic_factor())
-        return dp_total
+        return (self.pressure_drop_potential() + self.pressure_drop_friction()) / (1 - self.kinetic_factor())
     
     def pressure_traverse(self):
         pn = self.pressure
@@ -265,16 +260,16 @@ class BeggsBrill:
 if __name__ == "__main__":
     #import time
     #time_start = time.time()
-    well = BeggsBrill(450, (100+460), bubble_pressure=1500, qo_i=1500)
+    well = BeggsBrill(450, (100+460), qo_i=1500, bubble_pressure=1500)
     
     #print(well.pressure_traverse())
     
     #print(well.outflow())
     #import matplotlib.pyplot as plt
-    #
-    #ql, qg, qo, qw, pw = well.outflow()
-    #print(ql, qg, qo, qw, pw)
-    #plt.plot(qo, pw)
+    
+    # ql, qg, qo, qw, pw = well.outflow()
+    # print(ql, qg, qo, qw, pw)
+    # plt.plot(qo, pw)
     #plt.show()
     
     # h = well.delta_depth
@@ -287,8 +282,8 @@ if __name__ == "__main__":
     # ax[0].plot(p, h)
     # ax[1].plot(dp, h)
     # ax[2].plot(hl, h)
+    
     # time_end = time.time()
     # print('time', time_end-time_start)
-    
     # plt.show()
     
