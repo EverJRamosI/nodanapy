@@ -45,7 +45,6 @@ class BeggsBrill:
         self._prop_oil = OilProperties(self.pressure, self.temperature, self.specific_gravity, self.api, bubble_pressure=self.bubble_pressure)
         self._prop_water = WaterProperties(self.pressure, self.temperature, self.salinity)
         
-        
     def _delta_temp_(self):
         gradient = np.abs((self.temperature-self.temperature_node))/self.well_depth
         return self.temperature + gradient*self.delta_depth
@@ -62,20 +61,25 @@ class BeggsBrill:
         self.sig_liq = sigma_oil*(1/(1+self.wo_ratio)) + sigma_water*(self.wo_ratio/(1+self.wo_ratio))
     
     def _flow_(self):
-        q_oil = (self._prop_oil.factor_volumetric_oil()*self.qo_i)/15387
-        q_water = (self._prop_water.factor_volumetric_water()*self.wo_ratio*self.qo_i)/15387
+        #q_oil = (self._prop_oil.factor_volumetric_oil()*self.qo_i)/15387
+        q_oil = self.qo_i
+        #q_water = (self._prop_water.factor_volumetric_water()*self.wo_ratio*self.qo_i)/15387
+        q_water = self.wo_ratio*self.qo_i
         q_liq = q_oil+q_water
         #if (self.go_ratio - rs_o) < 0:
         #    q_gas = 0
         #else:
         #    q_gas = bg*(self.go_ratio-rs_o-(rs_w*WOR))*self.qo/86400
-        q_gas = (self._prop_gas.factor_volumetric_gas()*self.qo_i*self.go_ratio)/15387
+        #q_gas = (self._prop_gas.factor_volumetric_gas()*self.qo_i*self.go_ratio)/15387
+        q_gas = self.qo_i*self.go_ratio
         return [q_water, q_oil, q_gas, q_liq]
     
     def _velocities_(self):
-        *_, qg, ql = self._flow_()
-        v_sl = ql/self.area
-        v_sg = qg/self.area
+        qw, qo, qg, ql = self._flow_()
+        #v_sl = ql/self.area
+        v_sl = (((self._prop_oil.factor_volumetric_oil()*qo)/15387) + ((self._prop_water.factor_volumetric_water()*qw)/15387))/self.area
+        #v_sg = qg/self.area
+        v_sg = ((self._prop_gas.factor_volumetric_gas()*qg)/15387)/self.area
         v_m = v_sl + v_sg
         return [v_sl, v_sg, v_m]
     
@@ -249,10 +253,10 @@ class BeggsBrill:
             q_w, q_o, q_g, q_l = self._flow_()
             pwf, *_ = self.pressure_traverse()
             pwfi.append(pwf[-1])
-            qoi.append(q_o*15387)
-            qwi.append(q_w*15387)
-            qgi.append(q_g*86400)
-            qli.append(q_l*15387)
+            qoi.append(q_o)
+            qwi.append(q_w)
+            qgi.append(q_g/1000)
+            qli.append(q_l)
             
         return [np.array(qli), np.array(qgi), np.array(qoi), np.array(qwi), np.array(pwfi)]
         
@@ -260,21 +264,21 @@ class BeggsBrill:
 if __name__ == "__main__":
     #import time
     #time_start = time.time()
-    well = BeggsBrill(450, (100+460), qo_i=1500, bubble_pressure=1500)
+    well = BeggsBrill(450, (100+460), bubble_pressure=1500)
     
     #print(well.pressure_traverse())
     
     #print(well.outflow())
-    #import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
     
     # ql, qg, qo, qw, pw = well.outflow()
     # print(ql, qg, qo, qw, pw)
     # plt.plot(qo, pw)
-    #plt.show()
+    # plt.show()
     
-    # h = well.delta_depth
-    # p, dp, hl = well.pressure_traverse()
-    # print(p, dp, hl, h)
+    h = well.delta_depth
+    p, dp, hl = well.pressure_traverse()
+    print(p, dp, hl, h)
     # fig, ax = plt.subplots(1, 3)
     # ax[0].invert_yaxis()
     # ax[1].invert_yaxis()
