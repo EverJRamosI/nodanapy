@@ -11,8 +11,8 @@ from _properties.waterProperties import WaterProperties
 class Gray:
     def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
                 api: int|float=40, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.0, 
-                go_ratio: int|float=500, internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float=500, 
-                temperature_node: int|float=600, qg_i: int|float=0.01, qg_n: int|float=10000, amount: int=25):
+                go_ratio: int|float=500, internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float=5000, 
+                temperature_node: int|float=600, ql_i: int|float=0.01, ql_n: int|float=1000, amount: int=25):
         
         self.pressure = pressure
         self.temperature = temperature
@@ -26,18 +26,18 @@ class Gray:
         self.rugosity = rugosity
         self.well_depth = well_depth
         self.temperature_node = temperature_node
-        self.qg_i = qg_i
-        self.qg_n = qg_n
+        self.ql_i = ql_i
+        self.ql_n = ql_n
         self.amount = amount
         
         self.wo_ratio = self.water_cut/(1-self.water_cut)
         self.sg_oil = 141.5/(131.5+self.api)
         self.gl_ratio = (self.go_ratio)/(self.wo_ratio+1)
-        #self.lg_ratio = self.go_ratio/(1-self.water_cut)
+        self.lg_ratio = self.go_ratio/(1-self.water_cut)
         self.wg_ratio = (self.water_cut*(1/self.go_ratio))/(1-self.water_cut)
         self.area = np.pi/4*((self.internal_diameter/12)**2)
                 
-        self.delta_qg = np.linspace(self.qg_i, self.qg_n, self.amount)
+        self.delta_ql = np.linspace(self.ql_i, self.ql_n, self.amount)
         self.delta_depth = np.linspace(0, self.well_depth, self.amount)
         self.delta_t = self._delta_temp_()
         
@@ -50,22 +50,32 @@ class Gray:
         return self.temperature + gradient*self.delta_depth
         
     def _flow_(self):
-        q_gas = ((self._prop_gas.factor_volumetric_gas()*self.qg_i)/1000)/15387
-        q_oil = (self._prop_oil.factor_volumetric_oil()*(self.qg_i/1000)/self.go_ratio)/15387
-        q_water = (self._prop_water.factor_volumetric_water()*self.wg_ratio*(self.qg_i/1000))/15387
-        q_liq = q_oil + q_water
+        #q_gas = ((self._prop_gas.factor_volumetric_gas()*self.qg_i)/1000)/15387
+        #q_gas = self.qg_i*1000
+        
+        q_liq = self.ql_i
+        
+        #q_oil = (self._prop_oil.factor_volumetric_oil()*(self.qg_i/1000)/self.go_ratio)/15387
+        #q_oil = (self.qg_i*1000)/self.go_ratio
+        q_oil = (1-self.water_cut)*self.ql_i
+        q_gas = self.ql_i*self.gl_ratio
+        #q_water = (self._prop_water.factor_volumetric_water()*self.wg_ratio*(self.qg_i/1000))/15387
+        #q_water = self.wg_ratio*(self.qg_i*1000)
+        #q_liq = q_oil + q_water
+        q_water = self.water_cut*self.ql_i
         return [q_water, q_oil, q_gas, q_liq]
 
     def _velocities_(self):
-        *_, q_gas, q_liq = self._flow_()
-        v_sg = ((q_gas*1e6)/(self.area))
-        v_sl = ((q_liq)/(self.area))
+        qw, qo, qg, ql = self._flow_()
+        v_sg = ((self._prop_gas.factor_volumetric_gas()*qg)/15387)/(self.area)
+        v_sl = (((self._prop_oil.factor_volumetric_oil()*qo)/15387) + ((self._prop_water.factor_volumetric_water()*qw)/15387))/(self.area)
         v_m = v_sg + v_sl
         return [v_sg, v_sl, v_m]
     
     def _fractions_liquid_(self):
         q_water, q_oil, q_gas, q_liq = self._flow_()
         f_oil = q_oil/q_liq
+        #f_oil = ((self._prop_oil.factor_volumetric_oil()*q_oil)/15387)/(((self._prop_oil.factor_volumetric_oil()*q_oil)/15387) + ((self._prop_water.factor_volumetric_water()*q_water)/15387))
         f_water = 1-f_oil
         return [f_oil, f_water]        
     
@@ -117,20 +127,22 @@ class Gray:
         return delta_pressure
     
     def _number_reynolds_(self):
-        *_, q_liq = self._flow_()
-        v_sg, v_sl, v_m = self._velocities_()
+        qw, qo, *_ = self._flow_()
+        q_liq = ((self._prop_oil.factor_volumetric_oil()*qo)/15387) + ((self._prop_water.factor_volumetric_water()*qw)/15387)
+        #v_sg, v_sl, v_m = self._velocities_()
         rho_liq, rho_ns, sigma_liq, mu_liq, mu_ns = self._properties_liquid_()
         Hl = self.holdup()
         M = self.sg_oil*350.52*(1/(1+self.wo_ratio)) + (self._prop_water.density_water()/62.42)*350.52*(self.wo_ratio/(1+self.wo_ratio)) + self.specific_gravity*0.0764*self.gl_ratio
-        R_v = v_sl/v_sg
+        #R_v = v_sl/v_sg
         NRe = 2.2e-2*((q_liq*15387*M)/((self.internal_diameter/12)*(mu_liq**Hl)*(self._prop_gas.viscosity_gas()**(1-Hl))))
         #NRe = (rho_ns*v_m*(self.internal_diameter/12))/(0.000672*mu_ns)
-        rugosity_o = (28.5*sigma_liq)/(453.592*rho_ns*((v_m)**2))
-        if R_v >= 0.007:
-            rugosity = rugosity_o
-        else:
-            rugosity = self.rugosity + R_v*((rugosity_o - self.rugosity)/0.007)
-        f = (-2*np.log10((1/3.7)*(rugosity/self.internal_diameter))+((6.81/NRe)**0.9))**(-2)
+        # rugosity_o = (28.5*sigma_liq)/(453.592*rho_ns*((v_m)**2))
+        # if R_v >= 0.007:
+        #     rugosity = rugosity_o
+        # else:
+        #     rugosity = self.rugosity + R_v*((rugosity_o - self.rugosity)/0.007)
+        #print(rugosity)
+        f = (-2*np.log10((1/3.7)*(self.rugosity/self.internal_diameter))+((6.81/NRe)**0.9))**(-2)
         return [NRe, f]
     
     def pressure_drop_friction(self):
@@ -178,28 +190,29 @@ class Gray:
         qli = []
         pwfi = []
         
-        for flow_value in self.delta_qg:
-            self.qg_i = flow_value
+        for flow_value in self.delta_ql:
+            self.ql_i = flow_value
             q_w, q_o, q_g, q_l = self._flow_()
             pwf, *_ = self.pressure_traverse()
             pwfi.append(pwf[-1])
-            qoi.append(q_o*15387)
-            qwi.append(q_w*15387)
-            qgi.append(q_g*86400)
-            qli.append(q_l*15387)
+            qoi.append(q_o)
+            qwi.append(q_w)
+            qgi.append(q_g/1000)
+            qli.append(q_l)
             
         return [np.array(qli), np.array(qgi), np.array(qoi), np.array(qwi), np.array(pwfi)]
 
 if __name__ == "__main__":
-    #import time
-    #time_start = time.time()
-    well = Gray(480, (100+460), qg_i=100)# 0.673, 53.7, 149.7, 8415, 0.88, 48.5981, 2.441, 5098, 7800, 5)
-    # print(well._properties_())
+    import time
+    time_start = time.time()
+    #well = Gray(149.7, (84+460), internal_diameter=1.5, ql_i=0.001, ql_n=5.06801)# 0.673, 53.7, 149.7, 8415, 0.88, 48.5981, 2.441, 5098, 7800, 5)
+    well = Gray(130, (84+460), internal_diameter=1.5, ql_i=0.001, ql_n=5.06801)# 0.673, 53.7, 149.7, 8415, 0.88, 48.5981, 2.441, 5098, 7800, 5)
+    
     #print(well._flow_())
     #print(well._velocities_())
     #print(well.outflow())
 
-    #import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
     #h = well.delta_depth
     #p, dp, hl = well.pressure_traverse()
@@ -213,9 +226,9 @@ if __name__ == "__main__":
     #ax[2].plot(hl, h)
     #plt.show()
     
-    #ql, qg, qo, qw, pw = well.outflow()
-    #print(ql, qg, qo, qw, pw)
-    #plt.plot(qg, pw)
-    #time_end = time.time()
-    #print('time', time_end-time_start)
-    #plt.show()
+    ql, qg, qo, qw, pw = well.outflow()
+    print(ql, qg, qo, qw, pw)
+    plt.plot(ql, pw)
+    time_end = time.time()
+    print('time', time_end-time_start)
+    plt.show()
