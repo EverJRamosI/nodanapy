@@ -59,11 +59,10 @@ class VogelRD:
         return [ql, qg/1000, qo, qw, self.delta_p]
 
 class VogelPD:
-    def __init__(self, pressure: int|float, temperature: int|float, bubble_pressure: int|float=0, q_test: int|float=100, pwf_test: int|float=1000, 
+    def __init__(self, pressure: int|float, bubble_pressure: int|float=0, q_test: int|float=100, pwf_test: int|float=1000, 
                 water_cut: float=0.0, go_ratio: int|float=50, amount: int=25):
         
         self.pressure = pressure
-        self.temperature = temperature
         self.bubble_pressure = bubble_pressure
         self.q_test = q_test
         self.pwf_test = pwf_test
@@ -81,7 +80,7 @@ class VogelPD:
     def productivity_index(self):
         if self.pwf_test > self.bubble_pressure:
             return self.q_test/(self.pressure-self.pwf_test)
-        elif self.pwf_test < self.bubble_pressure:
+        elif self.pwf_test <= self.bubble_pressure:
             return self.q_test/((self.pressure-self.bubble_pressure)+(self.bubble_pressure/1.8)*(1-0.2*(self.pwf_test/self.bubble_pressure)-0.8*((self.pwf_test/self.bubble_pressure)**2)))
     
     def _flow_bif_(self, ):
@@ -106,12 +105,12 @@ class VogelPD:
 if __name__ == "__main__":
     
     #well = VogelRD(5651, 590, permeability=8.2, height_formation=53, reservoir_radius=2980, go_ratio=85, well_radius=0.328, bubble_pressure=6000)
-    well = VogelPD(5651, 590, 6000, q_test=1300, pwf_test=3000,)
+    well = VogelPD(1309, 1000, q_test=100, pwf_test=1000,)
     
     # print("j", well.j, "qb", well.q_b, "qm", well.q_v, "qmb", well.q_max)
     
-    # ql, qg, qo, qw, pw = well.inflow()
-    # print(ql, qg, qo, qw, pw)
+    #ql, qg, qo, qw, pw = well.inflow()
+    #print(ql, qg, qo, qw, pw)
     
     # import matplotlib.pyplot as plt
     
