@@ -8,10 +8,40 @@ import numpy as np
 from _properties.gasProperties import GasProperties
 
 class LITRD:
+    """
+    ### Summary:
+    This class is to determine IPR with the LIT method for gas well with reservoir data.
+    
+    ### Methods:
+    - __ratio_
+    - __potential_
+    - __flow_gas_
+    - inflow: This method is to calculate the IPR.
+    """    
     def __init__(self, pressure: int|float, temperature: int|float, bubble_pressure: int|float=0, specific_gravity: float=0.65, api: int|float=40,
                 permeability: int|float=10, compressibility: float=1e-5, skin: int|float=0, height_formation: int|float=10, 
                 well_radius: int|float=0.35, reservoir_radius: int|float=1000, water_cut: float=0.0, 
                 go_ratio: int|float=5000, amount: int=25):
+        """
+        Args:
+            pressure (int | float): Well Pressure [psia]
+            temperature (int | float): Well Temperature [oR]
+            bubble_pressure (int | float, optional): Bubble Pressure [psia]. Defaults to 0.
+            specific_gravity (float, optional): Gas Specific Gravity. Defaults to 0.65.
+            api (int | float, optional): API Gravity. Defaults to 40.
+            permeability (int | float, optional): Permeability [md]. Defaults to 10.
+            compressibility (float, optional): Total Compressibility [psia^-1]. Defaults to 1e-5.
+            skin (int | float, optional): Skin Factor. Defaults to 0.
+            height_formation (int | float, optional): Height Formation [ft]. Defaults to 10.
+            well_radius (int | float, optional): Well Radius [ft]. Defaults to 0.35.
+            reservoir_radius (int | float, optional): Reservoir Radius [ft]. Defaults to 1000.
+            water_cut (float, optional): Water Cut. Defaults to 0.0.
+            go_ratio (int | float, optional): Gas-Oil Ratio [scf/stb]. Defaults to 5000.
+            amount (int, optional): Number of Points. Defaults to 25.
+        ### Private Args:
+            delta_p (array): Pressures Assumed from 14.7 to well pressure [psia]
+            _mp (float): Potential
+        """   
         
         self.pressure = pressure
         self.temperature = temperature
@@ -61,6 +91,11 @@ class LITRD:
         return (703e-6*self.permeability*self.height_formation*(mpi-self._mp))/(self.temperature*(np.log(self.reservoir_radius/self.well_radius)-0.75+self.skin))
     
     def inflow(self):
+        """
+        Returns:
+            List: It will return a list with the rates and flowing bottom hole pressure\n
+            [ql (bbl/d), qg(Mscf/d), qo(bbl/d), qw(bbl/d), pwf(psia)]
+        """  
         qg = self._flow_gas_()*1000
         qo = qg/self.go_ratio
         qw = (qg*self.water_cut*(1/self.go_ratio))/(1-self.water_cut)
@@ -68,8 +103,36 @@ class LITRD:
         return [ql, qg/1000, qo, qw, self.delta_p]
     
 class LITPD:
+    """
+    ### Summary:
+    This class is to determine IPR with the LIT method for gas well with production data.
+    
+    ### Methods:
+    - __ratio_
+    - __potential_
+    - __quadratic_regression_
+    - __linear_regression_
+    - __flow_gas_
+    - inflow: This method is to calculate the IPR.
+    """   
     def __init__(self, pressure: int|float, temperature: int|float, qg_test: List[int|float]=[3000, 4500, 5600, 6300], pwf_test: List[int|float]=[3500, 3000, 2500, 2000], 
                 specific_gravity: float=0.65, water_cut: float=0.0, go_ratio: int|float=5000, amount: int=25):
+        """
+        Args:
+            pressure (int | float): Well Pressure [psia]
+            temperature (int | float): Well Temperature [oR]
+            qg_test (List[int | float], optional): Rate Gas [Mscf/d]. Defaults to [3000, 4500, 5600, 6300].
+            pwf_test (List[int | float], optional): Flowing Pressure [psia]. Defaults to [3500, 3000, 2500, 2000].
+            specific_gravity (float, optional): Gas Specific Gravity. Defaults to 0.65.
+            water_cut (float, optional): Water Cut. Defaults to 0.0.
+            go_ratio (int | float, optional): Gas-Oil Ratio [scf/stb]. Defaults to 5000.
+            amount (int, optional): Number of Points. Defaults to 25.
+        ### Private Args:
+            delta_p (array): Pressures Assumed from 14.7 to well pressure [psia]
+            _mp(float): Potential
+            _a: Intersection
+            _b: Slope
+        """
         
         self.pressure = pressure
         self.temperature = temperature
@@ -150,6 +213,11 @@ class LITPD:
         return (-np.abs(self._b) + np.sqrt(np.abs(self._b)**2 + 4*np.abs(self._a)*(mpi-self._mp)))/(2**np.abs(self._a))
     
     def inflow(self):
+        """
+        Returns:
+            List: It will return a list with the rates and flowing bottom hole pressure\n
+            [ql (bbl/d), qg(Mscf/d), qo(bbl/d), qw(bbl/d), pwf(psia)]
+        """ 
         qg = self._flow_gas_()*1e6
         qo = qg/self.go_ratio
         qw = (qg*self.water_cut*(1/self.go_ratio))/(1-self.water_cut)

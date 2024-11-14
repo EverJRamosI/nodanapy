@@ -1,0 +1,4 @@
+petpropy
+numpy
+pandas
+scipy

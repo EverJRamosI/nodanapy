@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nodanapy"
+version = "1.0.0"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Ever J. Ramos I."}
+]
+description = "Calculator package of Well Nodal Analysis"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["petroleum", "chemical", "petroleum-engineering", "chemical-engineering", "oil-and-gas", "nodal-analysis"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "petpropy",
+    "numpy",
+    "pandas",
+    "scipy",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/EverJRamosI/nodanapy"
+"Bug Reports" = "https://github.com/EverJRamosI/nodanapy/issues"

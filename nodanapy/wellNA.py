@@ -25,12 +25,50 @@ OPTIMAL_WATER = _make_tuple_bunch('WATER', ['Qw', 'Pwf'])
 PRESSURE = _make_tuple_bunch('PWF', ['H', 'T', 'Vsl', 'Vsg', 'Vm', 'Hl', 'dP', 'P'])
 
 class WellNAGasR:
+    """
+    ### Summary:
+    This class is to determine IPR and VLP for gas well with reservoir data.
+    
+    ### Methods:
+    - __ipr_
+    - __vlp_
+    - optimal_flow: This method is to calculate Optimal Rate.
+    - pressure_flow: This method is to calculate pressure traverse for the optimal rate.
+    """
     def __init__(self, wellhead_pressure: int|float, wellhead_temperature: int|float, reservoir_pressure: int|float, reservoir_temperature: int|float,
                 specific_gravity: float=0.65, permeability: int|float=10, compressibility: float=1e-6, skin: int|float=0, height_formation: int|float=10, 
                 well_radius: int|float=0.35, reservoir_radius: int|float=1000, api: int|float=40, 
                 bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.0, go_ratio: int|float=500, 
                 internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float = 5000, amount: int=25,
                 model_ipr: str='darcy', model_vlp: str='gray'):
+        """
+        Args:
+            wellhead_pressure (int | float): Wellhead Pressure [psia]
+            wellhead_temperature (int | float): Wellhead Temperature [oR]
+            reservoir_pressure (int | float): Reservoir Pressure [psia]
+            reservoir_temperature (int | float): Reservoir Temperature [oR]
+            specific_gravity (float, optional): Gas Specific Gravity. Defaults to 0.65.
+            permeability (int | float, optional): Permeability [md]. Defaults to 10.
+            compressibility (float, optional): Total compressibility [psia^-1]. Defaults to 1e-6.
+            skin (int | float, optional): Skin Factor. Defaults to 0.
+            height_formation (int | float, optional): Height Formation [ft]. Defaults to 10.
+            well_radius (int | float, optional): Well Radius [ft]. Defaults to 0.35.
+            reservoir_radius (int | float, optional): Reservoir Radius [ft]. Defaults to 1000.
+            api (int | float, optional): API Specific. Defaults to 40.
+            bubble_pressure (int | float, optional): Bubble Pressure. Defaults to 0.
+            salinity (int | float, optional): Salinity. Defaults to 1000.
+            water_cut (float, optional): Water Cut. Defaults to 0.0.
+            go_ratio (int | float, optional): Gas-Oil Ratio [scf/stb]. Defaults to 500.
+            internal_diameter (int | float, optional): Inside Pipe Diameter [in]. Defaults to 2.5.
+            rugosity (float, optional): Pipe Rugosity [in]. Defaults to 0.0001.
+            well_depth (int | float, optional): Well Depth [ft]. Defaults to 5000.
+            amount (int, optional): Number of Points. Defaults to 25.
+            model_ipr (str, optional): Model for determining IPR. Defaults to 'darcy'. Other option 'LIT'.
+            model_vlp (str, optional): Model for determining VLP. Defaults to 'gray'.
+        ### Private Args:
+            **ipr (array)**: It will return an array of the IPR
+            **vlp (array)**: It will return an array of the VLP
+        """
         
         self.wellhead_pressure = wellhead_pressure
         self.wellhead_temperature = wellhead_temperature
@@ -86,6 +124,10 @@ class WellNAGasR:
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)
         
     def optimal_flow(self):
+        """
+        Returns:
+            tuple: It will return a tuple with values of the optimal rate, that is to say the intersection of the curves.
+        """
         
         ql_ipr = self.ipr.Ql
         qg_ipr = self.ipr.Qg
@@ -144,6 +186,11 @@ class WellNAGasR:
         return liquid, gas, oil, water
     
     def pressure_flow(self):
+        """
+        Returns:
+            tuple: It will returns a tuple with values to determine the flowing pressure.
+        """  
+        
         qli = self.rate_liq.Ql
         
         optimal = Gray(pressure=self.wellhead_pressure, temperature=self.wellhead_temperature, specific_gravity=self.specific_gravity, api=self.api, 
@@ -157,10 +204,44 @@ class WellNAGasR:
         return PRESSURE(H=h, T=t, Vsl=vsl, Vsg=vsg, Vm=vm, Hl=hl, dP=dp, P=p)
 
 class WellNAGasP:
+    """
+    ### Summary:
+    This class is to determine IPR and VLP for gas well with production tests.
+    
+    ### Methods:
+    - __ipr_
+    - __vlp_
+    - optimal_flow: This method is to calculate Optimal Rate.
+    - pressure_flow: This method is to calculate pressure traverse for the optimal rate.
+    """ 
     def __init__(self, wellhead_pressure: int|float, wellhead_temperature: int|float, reservoir_pressure: int|float, reservoir_temperature: int|float,
                 qg_test: list=[3000, 4500, 5600, 6300], pwf_test: list=[3500, 3000, 2500, 2000], api: int|float=40, specific_gravity: float=0.65, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.0, go_ratio: int|float=500, 
                 internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float = 5000, amount: int=25,
                 model_ipr: str='LIT', model_vlp: str='gray'):
+        """
+        Args:
+            wellhead_pressure (int | float): Wellhead Pressure [psia]
+            wellhead_temperature (int | float): Wellhead Temperature [oR]
+            reservoir_pressure (int | float): Reservoir Pressure [psia]
+            reservoir_temperature (int | float): Reservoir Temperature [oR]
+            qg_test (list, optional): Gas Rate Test [Mscf/d]. Defaults to [3000, 4500, 5600, 6300].
+            pwf_test (list, optional): Flowing Pressure Test [psia]. Defaults to [3500, 3000, 2500, 2000].
+            api (int | float, optional): API Specific. Defaults to 40.
+            specific_gravity (float, optional): Gas Specific Gravity. Defaults to 0.65.
+            bubble_pressure (int | float, optional): Bubble Pressure [psia]. Defaults to 0.
+            salinity (int | float, optional): Salinity [ppm]. Defaults to 1000.
+            water_cut (float, optional): Water Cut. Defaults to 0.0.
+            go_ratio (int | float, optional): Gas-Oil Ratio [scf/stb]. Defaults to 500.
+            internal_diameter (int | float, optional): Inside Pipe Diameter [in]. Defaults to 2.5.
+            rugosity (float, optional): Pipe Rugosity [in]. Defaults to 0.0001.
+            well_depth (int | float, optional): Well Depth [ft]. Defaults to 5000.
+            amount (int, optional): Number of Points. Defaults to 25.
+            model_ipr (str, optional): Model for determining IPR. Defaults to 'LIT'.
+            model_vlp (str, optional): Model for determining VLP. Defaults to 'gray'.
+        ### Private Args:
+            **ipr (array)**: It will return an array of the IPR
+            **vlp (array)**: It will return an array of the VLP
+        """       
         
         self.wellhead_pressure = wellhead_pressure
         self.wellhead_temperature = wellhead_temperature
@@ -207,6 +288,10 @@ class WellNAGasP:
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)
         
     def optimal_flow(self):
+        """
+        Returns:
+            tuple: It will return a tuple with values of the optimal rate, that is to say the intersection of the curves.
+        """
         
         ql_ipr = self.ipr.Ql
         qg_ipr = self.ipr.Qg
@@ -265,6 +350,11 @@ class WellNAGasP:
         return liquid, gas, oil, water
     
     def pressure_flow(self):
+        """
+        Returns:
+            tuple: It will returns a tuple with values to determine the flowing pressure.
+        """
+        
         qli = self.rate_liq.Ql
         
         optimal = Gray(pressure=self.wellhead_pressure, temperature=self.wellhead_temperature, specific_gravity=self.specific_gravity, api=self.api, 
@@ -277,12 +367,50 @@ class WellNAGasP:
         
         return PRESSURE(H=h, T=t, Vsl=vsl, Vsg=vsg, Vm=vm, Hl=hl, dP=dp, P=p)            
 class WellNAOilR:
+    """
+    ### Summary:
+    This class is to determine IPR and VLP for oil well with reservoir data.
+    
+    ### Methods:
+    - __ipr_
+    - __vlp_
+    - optimal_flow: This method is to calculate Optimal Rate.
+    - pressure_flow: This method is to calculate pressure traverse for the optimal rate.
+    """
     def __init__(self, wellhead_pressure: int|float, wellhead_temperature: int|float, reservoir_pressure: int|float, reservoir_temperature: int|float,
                 bubble_pressure: int|float=0, specific_gravity: float=0.65, permeability: int|float=10, skin: int|float=0, compressibility: float=1e-6,
                 height_formation: int|float=10, well_radius: int|float=0.35, reservoir_radius: int|float=1000, api: int|float=40, 
                 salinity: int|float=1000, water_cut: float=0.0, go_ratio: int|float=500, 
                 internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float = 5000, amount: int=25,
                 model_ipr: str='vogel', model_vlp: str='hagedorn'):
+        """
+        Args:
+            wellhead_pressure (int | float): Wellhead Pressure [psia]
+            wellhead_temperature (int | float): Wellhead Temperature [oR]
+            reservoir_pressure (int | float): Reservoir Pressure [psia]
+            reservoir_temperature (int | float): Reservoir Temperature [oR]
+            specific_gravity (float, optional): Gas Specific Gravity. Defaults to 0.65.
+            permeability (int | float, optional): Permeability [md]. Defaults to 10.
+            compressibility (float, optional): Total compressibility [psia^-1]. Defaults to 1e-6.
+            skin (int | float, optional): Skin Factor. Defaults to 0.
+            height_formation (int | float, optional): Height Formation [ft]. Defaults to 10.
+            well_radius (int | float, optional): Well Radius [ft]. Defaults to 0.35.
+            reservoir_radius (int | float, optional): Reservoir Radius [ft]. Defaults to 1000.
+            api (int | float, optional): API Specific. Defaults to 40.
+            bubble_pressure (int | float, optional): Bubble Pressure. Defaults to 0.
+            salinity (int | float, optional): Salinity. Defaults to 1000.
+            water_cut (float, optional): Water Cut. Defaults to 0.0.
+            go_ratio (int | float, optional): Gas-Oil Ratio [scf/stb]. Defaults to 500.
+            internal_diameter (int | float, optional): Inside Pipe Diameter [in]. Defaults to 2.5.
+            rugosity (float, optional): Pipe Rugosity [in]. Defaults to 0.0001.
+            well_depth (int | float, optional): Well Depth [ft]. Defaults to 5000.
+            amount (int, optional): Number of Points. Defaults to 25.
+            model_ipr (str, optional): Model for determining IPR. Defaults to 'vogel'.
+            model_vlp (str, optional): Model for determining VLP. Defaults to 'hagedorn'. Other option 'beggs'.
+        ### Private Args:
+            **ipr (array)**: It will return an array of the IPR
+            **vlp (array)**: It will return an array of the VLP
+        """
         
         self.wellhead_pressure = wellhead_pressure
         self.wellhead_temperature = wellhead_temperature
@@ -339,6 +467,10 @@ class WellNAOilR:
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)            
             
     def optimal_flow(self):
+        """
+        Returns:
+            tuple: It will return a tuple with values of the optimal rate, that is to say the intersection of the curves.
+        """
         
         ql_ipr = self.ipr.Ql
         qg_ipr = self.ipr.Qg
@@ -397,6 +529,11 @@ class WellNAOilR:
         return liquid, gas, oil, water
     
     def pressure_flow(self):
+        """
+        Returns:
+            tuple: It will returns a tuple with values to determine the flowing pressure.
+        """ 
+        
         qli = self.rate_liq.Ql
         
         if self.model_vlp == 'hagedorn':
@@ -415,11 +552,45 @@ class WellNAOilR:
         return PRESSURE(H=h, T=t, Vsl=vsl, Vsg=vsg, Vm=vm, Hl=hl, dP=dp, P=p)
 
 class WellNAOilP:
+    """
+    ### Summary:
+    This class is to determine IPR and VLP for oil well with production tests.
+    
+    ### Methods:
+    - __ipr_
+    - __vlp_
+    - optimal_flow: This method is to calculate Optimal Rate.
+    - pressure_flow: This method is to calculate pressure traverse for the optimal rate.
+    """
     def __init__(self, wellhead_pressure: int|float, wellhead_temperature: int|float, reservoir_pressure: int|float, reservoir_temperature: int|float,
                 bubble_pressure: int|float=0, qo_test: list|int|float=None, pwf_test: list|int|float=None,
                 specific_gravity: float=0.65, api: int|float=40, salinity: int|float=1000, water_cut: float=0.0, go_ratio: int|float=500, 
                 internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float = 5000, amount: int=25,
                 model_ipr: str='vogel', model_vlp: str='hagedorn'):
+        """
+        Args:
+            wellhead_pressure (int | float): Wellhead Pressure [psia]
+            wellhead_temperature (int | float): Wellhead Temperature [oR]
+            reservoir_pressure (int | float): Reservoir Pressure [psia]
+            reservoir_temperature (int | float): Reservoir Temperature [oR]
+            bubble_pressure (int | float, optional): Bubble Pressure [psia]. Defaults to 0.
+            qo_test (list | int | float, optional): Oil Rate Test [bbl/d]. Defaults to None.
+            pwf_test (list | int | float, optional): Flowing Pressure [bbl/d]. Defaults to None.
+            specific_gravity (float, optional): Gas Specific Gravity. Defaults to 0.65.
+            api (int | float, optional): API Specific. Defaults to 40.
+            salinity (int | float, optional): Salinity [ppm]. Defaults to 1000.
+            water_cut (float, optional): Water Cut. Defaults to 0.0.
+            go_ratio (int | float, optional): Gas-Oil Ratio. Defaults to 500.
+            internal_diameter (int | float, optional): Inside Pipe Diameter [in]. Defaults to 2.5.
+            rugosity (float, optional): Pipe Rugosity [in]. Defaults to 0.0001.
+            well_depth (int | float, optional): Well Depth [ft]. Defaults to 5000.
+            amount (int, optional): Number of Points. Defaults to 25.
+            model_ipr (str, optional): Model for determining IPR. Defaults to 'vogel'. Other option 'fetkovich'.
+            model_vlp (str, optional): Model for determining VLP. Defaults to 'hagedorn'. Other option 'beggs'.
+        ### Private Args:
+            **ipr (array)**: It will return an array of the IPR
+            **vlp (array)**: It will return an array of the VLP
+        """
         
         self.wellhead_pressure = wellhead_pressure
         self.wellhead_temperature = wellhead_temperature
@@ -472,6 +643,10 @@ class WellNAOilP:
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf) 
             
     def optimal_flow(self):
+        """
+        Returns:
+            tuple: It will return a tuple with values of the optimal rate, that is to say the intersection of the curves.
+        """
         
         ql_ipr = self.ipr.Ql
         qg_ipr = self.ipr.Qg
@@ -530,6 +705,11 @@ class WellNAOilP:
         return liquid, gas, oil, water
     
     def pressure_flow(self):
+        """
+        Returns:
+            tuple: It will returns a tuple with values to determine the flowing pressure.
+        """
+        
         qli = self.rate_liq.Ql
         
         if self.model_vlp == 'hagedorn':
@@ -576,8 +756,8 @@ if __name__ == "__main__":
     # # #ax.plot(ipr.Qo, ipr.Pwf)
     # # #ax.plot(vlp.Qo, vlp.Pwf)
     
-    # #ax[0, 0].plot(ipr_well.Ql, ipr_well.Pwf)
-    # #ax[0, 0].plot(vlp_well.Ql, vlp_well.Pwf)
+    #axs[0, 0].plot(ipr_well.Ql, ipr_well.Pwf)
+    #axs[0, 0].plot(vlp_well.Ql, vlp_well.Pwf)
     # ax[0, 0].plot(ipr_well1.Ql, ipr_well1.Pwf)
     # ax[0, 0].plot(vlp_well1.Ql, vlp_well1.Pwf)
     
@@ -586,8 +766,8 @@ if __name__ == "__main__":
     # ax[0, 1].plot(ipr_well1.Qg, ipr_well1.Pwf)
     # ax[0, 1].plot(vlp_well1.Qg, vlp_well1.Pwf)
     
-    # #ax[1, 0].plot(ipr_well.Qo, ipr_well.Pwf)
-    # #ax[1, 0].plot(vlp_well.Qo, vlp_well.Pwf)
+    #axs[1, 0].plot(ipr_well.Qo, ipr_well.Pwf)
+    #axs[1, 0].plot(vlp_well.Qo, vlp_well.Pwf)
     # ax[1, 0].plot(ipr_well1.Qo, ipr_well1.Pwf)
     # ax[1, 0].plot(vlp_well1.Qo, vlp_well1.Pwf)
     

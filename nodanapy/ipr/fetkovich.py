@@ -2,8 +2,34 @@ from typing import List
 import numpy as np
 
 class Fetkovich:
+    """
+    ### Summary:
+    This class is to determine IPR with the Fetkovich method for oil well with production data.
+    
+    ### Methods:
+    - __linear_regression_
+    - __n_
+    - inflow: This method is to calculate the IPR.
+    """    
     def __init__(self, pressure: int|float, qo_test: List[int|float]=[300, 450, 560, 630], pwf_test: List[int|float]=[3500, 3000, 2500, 2000], 
                 water_cut: float=0.0, go_ratio: int|float=50, amount: int=25):
+        """
+        Args:
+            pressure (int | float): Well Pressure [psia]
+            qo_test (List[int | float]): Oil Rate Test [bbl/d]. Defaults to [300, 450, 560, 630].
+            pwf_test (List[int | float]): Flowing Pressure Test [psia]. Defaults to [3500, 3000, 2500, 2000].
+            water_cut (float): Water Cut. Defaults to 0.0.
+            go_ratio (int | float): Gas-Oil Ratio [scf/stb]. Defaults to 50.
+            amount (int, optional): Number of Points. Defaults to 25.
+        ### Private Args:
+            delta_p (array): Pressures Assumed from 14.7 to well pressure [psia]
+            _a (float): Intersection
+            _b (float): Slope
+            n (float): Constant n
+            q_max (float): Max Rate [bbl/d]
+            c (float): Constant c
+        """
+        
         self.pressure = pressure
         self.qo_test = np.array(qo_test)
         self.pwf_test = np.array(pwf_test)
@@ -34,6 +60,11 @@ class Fetkovich:
         return (np.log10(self.qo_test[-1])-np.log10(self.qo_test[0]))/(np.log10(delta_p[-1])-np.log10(delta_p[0]))
     
     def inflow(self):
+        """
+        Returns:
+            List: It will return a list with the rates and flowing bottom hole pressure\n
+            [ql (bbl/d), qg(Mscf/d), qo(bbl/d), qw(bbl/d), pwf(psia)]
+        """        
         qo = self.c*((self.pressure**2 - self.delta_p**2)**self.n)
         qg = qo*self.go_ratio
         qw = qo*self.water_cut/(1-self.water_cut)

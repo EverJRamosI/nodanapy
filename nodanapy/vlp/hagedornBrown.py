@@ -9,10 +9,52 @@ from _properties.oilProperties import OilProperties
 from _properties.waterProperties import WaterProperties
 
 class HagedornBrown:
+    """
+    ### Summary:
+    This class is to determine VLP with the Hagerdorn Brown method.
+    
+    ### Methods:
+    - __delta_temp_
+    - __flow_
+    - __properties_liquid_
+    - __total_mass_
+    - __velocities_
+    - holdup: This method determines the holdup
+    - __rho_m_
+    - __number_reynolds_
+    - pressure_traverse: This method determines the flowing pressure
+    - outflow: This method is to calculate the VLP.
+    """    
     def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
                 api: int|float=40, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.0, 
                 go_ratio: int|float=500, internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float=5000, 
                 temperature_node: int|float=600, ql_i: int|float=0.001, ql_n: int|float=1000, amount: int=25):
+        """
+        Args:
+            pressure (int | float): Well Pressure [psia]
+            temperature (int | float): Well Temperature [oR]
+            specific_gravity (float, optional): Gas Specific Gravity. Defaults to 0.65.
+            api (int | float, optional): API Specific. Defaults to 40.
+            bubble_pressure (int | float, optional): Bubble Pressure. Defaults to 0.
+            salinity (int | float, optional): Salinity [ppm]. Defaults to 1000.
+            water_cut (float, optional): Water Cut. Defaults to 0.0.
+            go_ratio (int | float, optional): Gas-Oil Ratio [scf/stb]. Defaults to 500.
+            internal_diameter (int | float, optional): Inside Pipe Diameter [in]. Defaults to 2.5.
+            rugosity (float, optional): Pipe Rugosity [in]. Defaults to 0.0001.
+            well_depth (int | float, optional): Well Depth [ft]. Defaults to 5000.
+            temperature_node (int | float, optional): Temperature Node [oR]. Defaults to 600.
+            ql_i (int | float, optional): Initial Rate Liquid [bbl/d]. Defaults to 0.001.
+            ql_n (int | float, optional): Max Rate Liquid [bbl/d]. Defaults to 1000.
+            amount (int, optional): Number of Points. Defaults to 25.
+        ### Private Args:
+            wo_ratio (float): Water-Oil Ratio [stb/stb]
+            sg_oil (float): Oil Specific Gravity
+            gl_ratio (float): Gas-Liquid Ratio [scf/stb]
+            area (float): Area of Tubbing [ft]
+            delta_ql (list[float]): Liquid rates assumed from ql_i to ql_n [bbl/d]
+            delta_depth (list[float]): Calculate depth from 0 to well_depth
+            delta_t (list[float]): Calculate flowing temperature from 0 to temperature_node             
+        """        
         
         self.pressure = pressure
         self.temperature = temperature
@@ -84,6 +126,10 @@ class HagedornBrown:
         return [v_sl, v_sg, v_m]
     
     def holdup(self):
+        """
+        Returns:
+            Array: It will returns an array value of the holdup.
+        """ 
         
         A = 1.071 - ((0.2218*((self._v_m)**2))/(self.internal_diameter/12))
         
@@ -137,6 +183,11 @@ class HagedornBrown:
         return [NRe, f]
         
     def pressure_traverse(self):
+        """
+        Returns:
+            List[array]: It will return a list from the ql_i argument with the values of liquid velocity, gas velocity, mix velocity, drop pressure, flowing pressure\n
+            [vsl (ft/s), vsg (ft/s), vm (ft/s), dp (psia), p (psia)]
+        """        
         p = [self.pressure]
         vsl = [self._v_sl]
         vsg = [self._v_sg]
@@ -178,6 +229,11 @@ class HagedornBrown:
         return [np.array(vsl), np.array(vsg), np.array(vm), np.array(hl), np.array(dp), np.array(p)]
 
     def outflow(self):
+        """
+        Returns:
+            List[array]: It will returns a list with the values of liquid rate, gas rate, oil rate, water rate, flowing pressure\n
+            [qli (bbl/d), qgi (Mscf/d), qoi (bbl/d), qwi (bbl/d), pwfi (psia)]
+        """   
         qoi = []
         qwi = []
         qgi = []
