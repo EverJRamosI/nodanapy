@@ -1,17 +1,13 @@
 <div align="center" rol="img">
-<img src="https://raw.githubusercontent.com/EverJRamosI/nodanapy/main/docs/images/NODANAPY.png" width="300">
+<img src="https://raw.githubusercontent.com/EverJRamosI/nodanapy/main/docs/images/NODANAPY.png" width="250">
 </div>
 <br>
 
-![stars](https://img.shields.io/github/stars/EverJRamosI/nodanapy
-)
-![forks](https://img.shields.io/github/forks/EverJRamosI/nodanapy
-)
-![watchers](https://img.shields.io/github/watchers/EverJRamosI/nodanapy
-)
-![issues](https://img.shields.io/github/issues/EverJRamosI/nodanapy
-)
-![license]()
+![stars](https://img.shields.io/github/stars/EverJRamosI/nodanapy)
+![forks](https://img.shields.io/github/forks/EverJRamosI/nodanapy)
+![watchers](https://img.shields.io/github/watchers/EverJRamosI/nodanapy)
+![issues](https://img.shields.io/github/issues/EverJRamosI/nodanapy)
+![license](https://img.shields.io/github/license/EverJRamosI/nodanapy)
 
 # NodAnaPy
 
@@ -68,7 +64,9 @@ ax_qo.plot(ipr_well.Qo, ipr_well.Pwf)
 ax_qo.plot(vlp_well.Qo, vlp_well.Pwf)
 ```
 **OUTPUT**
+
 ![Well Nodal Analysis](https://raw.githubusercontent.com/EverJRamosI/nodanapy/main/docs/images/Figure.png)
+
 > Ql(bbl/d) vs Pwf(psia); Qg(Mscf/d) vs Pwf(psia); Qo(bbl/d) vs Pwf(psia)
 
 ## Theory

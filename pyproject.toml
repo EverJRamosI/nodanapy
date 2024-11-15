@@ -9,10 +9,10 @@ license = {file = "LICENSE"}
 authors = [
     {name = "Ever J. Ramos I."}
 ]
-description = "Calculator package of Well Nodal Analysis"
+description = "Package for determinig the Gas or Oil Wells' Nodal Analysis"
 readme = "README.md"
 requires-python = ">=3.10"
-keywords = ["petroleum", "chemical", "petroleum-engineering", "chemical-engineering", "oil-and-gas", "nodal-analysis"]
+keywords = ["petroleum", "petroleum-engineering", "oil-and-gas", "nodal-analysis", "reservoir"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
@@ -26,5 +26,7 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/EverJRamosI/nodanapy"
+"Homepage" = "https://github.com/EverJRamosI"
+"Contact" = "https://www.linkedin.com/in/everjramosi/"
+"Source Code" = "https://github.com/EverJRamosI/nodanapy"
 "Bug Reports" = "https://github.com/EverJRamosI/nodanapy/issues"
