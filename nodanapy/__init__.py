@@ -16,6 +16,30 @@ This packages designed to determine the Nodal Analysis of the gas or oil well.
 - _properties: Classes to calculate the properties of oil, gas and water
 - wellNA: File .py where it is located to determine nodal analysis
 
+### Usage:
+
+Import the necessary modules and use the provided functions to compute nodal analysis well. For detailed examples and usage, refer to the documentation.
+    
+### Example:
+
+```python
+    from nodanapy import WellNAOilR
+    
+    pr = 4500 # reservoir pressure
+    tr = 140 + 460 # reservoir temperature
+    ph = 140 # wellhead pressure
+    th = 84 + 460 # wellhead temperature
+    pb = 1500 # bubble pressure
+    
+    well = WellNAOilR(ph, th, pr, tr, pb)
+
+    ipr_well = well.ipr
+    vlp_well = well.vlp
+    
+    print('IPR', ipr_well)
+    print('VLP', vlp_well)
+```
+
 ### License:
 
 This file is part of My Python Library.
@@ -35,13 +59,13 @@ along with My Python Library. If not, see <http://www.gnu.org/licenses/>.
 @author: Ever J. Ramos I.
 """
 
-from ipr.darcy import Darcy
-from ipr.fetkovich import Fetkovich
-from ipr.lit import LITPD, LITRD
-from vlp.beggsBrill import BeggsBrill
-from vlp.gray import Gray
-from vlp.hagedornBrown import HagedornBrown
-from .wellNA import WellNAGasP, WellNAGasR, WellNAOilP, WellNAOilR
+from nodanapy.ipr.darcy import Darcy
+from nodanapy.ipr.fetkovich import Fetkovich
+from nodanapy.ipr.lit import LITPD, LITRD
+from nodanapy.vlp.beggsBrill import BeggsBrill
+from nodanapy.vlp.gray import Gray
+from nodanapy.vlp.hagedornBrown import HagedornBrown
+from nodanapy.wellNA import WellNAGasP, WellNAGasR, WellNAOilP, WellNAOilR
 
 __all__ = ['Darcy', 'Fetkovich', 'LITPD', 'LITRD', 'BeggsBrill', 'Gray', 'HagedornBrown',
         'WellNAGasP', 'WellNAGasR', 'WellNAOilP', 'WellNAOilR']
