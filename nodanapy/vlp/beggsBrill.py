@@ -30,7 +30,7 @@ class BeggsBrill:
     def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
                 api: int|float=40, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.0, 
                 go_ratio: int|float=300, internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float=5000, 
-                temperature_node: int|float=600, angle: int|float=90, ql_i: int|float=0.001, ql_n: int|float=1000, amount: int=25):
+                temperature_node: int|float=600, pressure_node: int|float=5000, angle: int|float=90, ql_i: int|float=0.001, ql_n: int|float=1000, amount: int=25):
         """
         Args:
             pressure (int | float): Well Pressure [psia]
@@ -45,6 +45,7 @@ class BeggsBrill:
             rugosity (float, optional): Pipe Rugosity [in]. Defaults to 0.0001.
             well_depth (int | float, optional): Well Depth [ft]. Defaults to 5000.
             temperature_node (int | float, optional): Temperature Node [oR]. Defaults to 600.
+            pressure_node (int | float, optional): Pressure Node [psia]. Defaults to 5000.
             angle (int | float, optional): Well Angle. Defaults to 90.
             ql_i (int | float, optional): Initial Rate Liquid [bbl/d]. Defaults to 0.001.
             ql_n (int | float, optional): Max Rate Liquid [bbl/d]. Defaults to 1000.
@@ -71,6 +72,7 @@ class BeggsBrill:
         self.rugosity = rugosity
         self.well_depth = well_depth
         self.temperature_node = temperature_node
+        self.pressure_node = pressure_node
         self.angle = angle
         self.ql_i = ql_i
         self.ql_n = ql_n
@@ -295,6 +297,10 @@ class BeggsBrill:
             self.ql_i = flow_value
             self._q_water, self._q_oil, self._q_gas, self._q_liq = self._flow_()
             *_, pwf = self.pressure_traverse()
+            
+            if pwf[-1] > 2*self.pressure_node:
+                break
+            
             pwfi.append(pwf[-1])
             qoi.append(self._q_oil)
             qwi.append(self._q_water)

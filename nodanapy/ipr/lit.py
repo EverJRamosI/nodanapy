@@ -76,10 +76,10 @@ class LITRD:
         
         for i, r in enumerate(ratio):
             if i == 0:
-                mp = ((0+r)*(pressure[i]-0)) + 0
+                mp = ((0+r)*(pressure[i]-0))/1e6 + 0
                 delta_mp.append(mp)
             else:
-                mp = ((ratio[i-1]+r)*(pressure[i]-pressure[i-1])) + delta_mp[i-1]
+                mp = ((ratio[i-1]+r)*(pressure[i]-pressure[i-1]))/1e6 + delta_mp[i-1]
                 delta_mp.append(mp)
         
         delta_mp = np.array(delta_mp)
@@ -96,11 +96,11 @@ class LITRD:
             List: It will return a list with the rates and flowing bottom hole pressure\n
             [ql (bbl/d), qg(Mscf/d), qo(bbl/d), qw(bbl/d), pwf(psia)]
         """  
-        qg = self._flow_gas_()*1000
+        qg = self._flow_gas_()*1e6
         qo = qg/self.go_ratio
         qw = (qg*self.water_cut*(1/self.go_ratio))/(1-self.water_cut)
         ql = qo + qw
-        return [ql, qg/1000, qo, qw, self.delta_p]
+        return [ql, qg/1e3, qo, qw, self.delta_p]
     
 class LITPD:
     """

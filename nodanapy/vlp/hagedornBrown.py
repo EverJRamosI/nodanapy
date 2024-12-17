@@ -28,7 +28,7 @@ class HagedornBrown:
     def __init__(self, pressure: int|float, temperature: int|float, specific_gravity: float=0.65, 
                 api: int|float=40, bubble_pressure: int|float=0, salinity: int|float=1000, water_cut: float=0.0, 
                 go_ratio: int|float=500, internal_diameter: int|float=2.5, rugosity: float=0.0001, well_depth: int|float=5000, 
-                temperature_node: int|float=600, ql_i: int|float=0.001, ql_n: int|float=1000, amount: int=25):
+                temperature_node: int|float=600, pressure_node: int|float=5000, ql_i: int|float=0.001, ql_n: int|float=1000, amount: int=25):
         """
         Args:
             pressure (int | float): Well Pressure [psia]
@@ -43,6 +43,7 @@ class HagedornBrown:
             rugosity (float, optional): Pipe Rugosity [in]. Defaults to 0.0001.
             well_depth (int | float, optional): Well Depth [ft]. Defaults to 5000.
             temperature_node (int | float, optional): Temperature Node [oR]. Defaults to 600.
+            pressure_node (int | float, optional): Pressure Node [psia]. Defaults to 5000.
             ql_i (int | float, optional): Initial Rate Liquid [bbl/d]. Defaults to 0.001.
             ql_n (int | float, optional): Max Rate Liquid [bbl/d]. Defaults to 1000.
             amount (int, optional): Number of Points. Defaults to 25.
@@ -68,6 +69,7 @@ class HagedornBrown:
         self.rugosity = rugosity
         self.well_depth = well_depth
         self.temperature_node = temperature_node
+        self.pressure_node = pressure_node
         self.ql_i = ql_i
         self.ql_n = ql_n
         self.amount = amount
@@ -156,7 +158,7 @@ class HagedornBrown:
             if X3 < 0.01:
                 X3 = 0.01
             
-            psi = 0.91163 - 4.82176*X3 + 1232.25*(X2**2) - 22253.6*(X3**3) + 116174.3*(X3**4)
+            psi = 0.91163 - 4.82176*X3 + 1232.25*(X3**2) - 22253.6*(X3**3) + 116174.3*(X3**4)
             
             holdup_liq = holdup_psi*psi
     
@@ -214,7 +216,7 @@ class HagedornBrown:
             self._rho_m = self._rho_m_()
 
             dpf = (self._f*(self._mass**2)*((self._q_liq/15387)**2))/(7.413e10*((self.internal_diameter/12)**5)*self._rho_m)
-            dph = (self._rho_m*(((self._v_m**2)/2*32.17)/(dh-self.delta_depth[i-1])))
+            dph = (self._rho_m*(((self._v_m**2)/(2*32.17))/(dh-self.delta_depth[i-1])))
 
             dpt = (self._rho_m + dpf + dph)/144
             pj = p[i-1]+(dpt)*(dh-self.delta_depth[i-1])
@@ -244,6 +246,10 @@ class HagedornBrown:
             self.ql_i = flow_value
             self._q_water, self._q_oil, self._q_gas, self._q_liq = self._flow_()
             *_, pwf = self.pressure_traverse()
+            
+            if pwf[-1] > 2*self.pressure_node:
+                break
+            
             pwfi.append(pwf[-1])
             qoi.append(self._q_oil)
             qwi.append(self._q_water)
