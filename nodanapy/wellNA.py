@@ -461,7 +461,7 @@ class WellNAOilR:
         elif self.model_vlp == 'beggs':
             vlp = BeggsBrill(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, qo_i=qli, qo_n=qln, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, angle=90, ql_i=qli, ql_n=qln, amount=self.amount)
         
         ql, qg, qo, qw, pwf = vlp.outflow()
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)            
@@ -637,7 +637,7 @@ class WellNAOilP:
         elif self.model_vlp == 'beggs':
             vlp = BeggsBrill(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, qo_i=qli, qo_n=qln, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, angle=90, ql_i=qli, ql_n=qln, amount=self.amount)
         
         ql, qg, qo, qw, pwf = vlp.outflow()
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf) 
