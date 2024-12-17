@@ -118,7 +118,7 @@ class WellNAGasR:
         if self.model_vlp == 'gray':
             vlp = Gray(pressure=self.wellhead_pressure, temperature=self.wellhead_temperature, specific_gravity=self.specific_gravity, api=self.api, 
                     bubble_pressure=self.bubble_pressure, salinity=self.salinity, water_cut=self.water_cut, go_ratio=self.go_ratio, internal_diameter=self.internal_diameter, 
-                    rugosity=self.rugosity, well_depth=self.well_depth, temperature_node=self.reservoir_temperature, ql_i=0.001, ql_n=qln, amount=self.amount)
+                    rugosity=self.rugosity, well_depth=self.well_depth, temperature_node=self.reservoir_temperature, pressure_node=self.reservoir_pressure, ql_i=0.001, ql_n=qln, amount=self.amount)
         
         ql, qg, qo, qw, pwf = vlp.outflow()
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)
@@ -156,14 +156,20 @@ class WellNAGasR:
                 return x_opt, y_opt
             else:
                 print("No intersection found.")
-                return None
+                return None, None
 
         ql_opt, pwf_l_opt = find_intersection(ql_ipr, pwf_ipr, ql_vlp, pwf_vlp)
         qg_opt, pwf_g_opt = find_intersection(qg_ipr, pwf_ipr, qg_vlp, pwf_vlp)
         qo_opt, pwf_o_opt = find_intersection(qo_ipr, pwf_ipr, qo_vlp, pwf_vlp)
         qw_opt, pwf_w_opt = None, None
-        if all(qw_ipr)!=0 or all(qw_vlp)!=0:
+        
+        if any(qw_ipr)!=0 or any(qw_vlp)!=0:
             qw_opt, pwf_w_opt = find_intersection(qw_ipr, pwf_ipr, qw_vlp, pwf_vlp)
+        
+        liquid = OPTIMAL_LIQUID(Ql=0, Pwf=0)
+        gas = OPTIMAL_GAS(Qg=0, Pwf=0)
+        oil = OPTIMAL_OIL(Qo=0, Pwf=0)
+        water = OPTIMAL_WATER(Qw=0, Pwf=0)
         
         if None not in [ql_opt, pwf_l_opt] or None not in [qg_opt, pwf_g_opt] or None not in [qo_opt, pwf_o_opt] or None not in [qw_opt, pwf_w_opt]:
             if ql_opt!=0 and pwf_l_opt!=0:
@@ -195,7 +201,7 @@ class WellNAGasR:
         
         optimal = Gray(pressure=self.wellhead_pressure, temperature=self.wellhead_temperature, specific_gravity=self.specific_gravity, api=self.api, 
                     bubble_pressure=self.bubble_pressure, salinity=self.salinity, water_cut=self.water_cut, go_ratio=self.go_ratio, internal_diameter=self.internal_diameter, 
-                    rugosity=self.rugosity, well_depth=self.well_depth, temperature_node=self.reservoir_temperature, ql_i=qli, amount=self.amount)
+                    rugosity=self.rugosity, well_depth=self.well_depth, temperature_node=self.reservoir_temperature, pressure_node=self.reservoir_pressure, ql_i=qli, amount=self.amount)
         
         h = optimal.delta_depth
         t = optimal.delta_t
@@ -282,7 +288,7 @@ class WellNAGasP:
         if self.model_vlp == 'gray':
             vlp = Gray(pressure=self.wellhead_pressure, temperature=self.wellhead_temperature, specific_gravity=self.specific_gravity, api=self.api, 
                     bubble_pressure=self.bubble_pressure, salinity=self.salinity, water_cut=self.water_cut, go_ratio=self.go_ratio, internal_diameter=self.internal_diameter, 
-                    rugosity=self.rugosity, well_depth=self.well_depth, temperature_node=self.reservoir_temperature, ql_i=0.001, ql_n=qln, amount=self.amount)
+                    rugosity=self.rugosity, well_depth=self.well_depth, temperature_node=self.reservoir_temperature, pressure_node=self.reservoir_pressure, ql_i=0.001, ql_n=qln, amount=self.amount)
         
         ql, qg, qo, qw, pwf = vlp.outflow()
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)
@@ -320,14 +326,20 @@ class WellNAGasP:
                 return x_opt, y_opt
             else:
                 print("No intersection found.")
-                return None
+                return None, None
 
         ql_opt, pwf_l_opt = find_intersection(ql_ipr, pwf_ipr, ql_vlp, pwf_vlp)
         qg_opt, pwf_g_opt = find_intersection(qg_ipr, pwf_ipr, qg_vlp, pwf_vlp)
         qo_opt, pwf_o_opt = find_intersection(qo_ipr, pwf_ipr, qo_vlp, pwf_vlp)
         qw_opt, pwf_w_opt = None, None
-        if all(qw_ipr)!=0 or all(qw_vlp)!=0:
+        
+        if any(qw_ipr)!=0 or any(qw_vlp)!=0:
             qw_opt, pwf_w_opt = find_intersection(qw_ipr, pwf_ipr, qw_vlp, pwf_vlp)
+        
+        liquid = OPTIMAL_LIQUID(Ql=0, Pwf=0)
+        gas = OPTIMAL_GAS(Qg=0, Pwf=0)
+        oil = OPTIMAL_OIL(Qo=0, Pwf=0)
+        water = OPTIMAL_WATER(Qw=0, Pwf=0)
         
         if None not in [ql_opt, pwf_l_opt] or None not in [qg_opt, pwf_g_opt] or None not in [qo_opt, pwf_o_opt] or None not in [qw_opt, pwf_w_opt]:
             if ql_opt!=0 and pwf_l_opt!=0:
@@ -359,7 +371,7 @@ class WellNAGasP:
         
         optimal = Gray(pressure=self.wellhead_pressure, temperature=self.wellhead_temperature, specific_gravity=self.specific_gravity, api=self.api, 
                     bubble_pressure=self.bubble_pressure, salinity=self.salinity, water_cut=self.water_cut, go_ratio=self.go_ratio, internal_diameter=self.internal_diameter, 
-                    rugosity=self.rugosity, well_depth=self.well_depth, temperature_node=self.reservoir_temperature, ql_i=qli, amount=self.amount)
+                    rugosity=self.rugosity, well_depth=self.well_depth, temperature_node=self.reservoir_temperature, pressure_node=self.reservoir_pressure, ql_i=qli, amount=self.amount)
         
         h = optimal.delta_depth
         t = optimal.delta_t
@@ -451,17 +463,17 @@ class WellNAOilR:
         return IPR(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)
         
     def _vlp_(self):
-        qli = 0.001
+        
         qln = self.ipr.Ql[-1]
         
         if self.model_vlp == 'hagedorn':
             vlp = HagedornBrown(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, qli, qln, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, self.reservoir_pressure, ql_i=0.001, ql_n=qln, amount=self.amount)
         elif self.model_vlp == 'beggs':
             vlp = BeggsBrill(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, angle=90, ql_i=qli, ql_n=qln, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, self.reservoir_pressure, angle=90, ql_i=0.001, ql_n=qln, amount=self.amount)
         
         ql, qg, qo, qw, pwf = vlp.outflow()
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)            
@@ -499,14 +511,20 @@ class WellNAOilR:
                 return x_opt, y_opt
             else:
                 print("No intersection found.")
-                return None
+                return None, None
 
         ql_opt, pwf_l_opt = find_intersection(ql_ipr, pwf_ipr, ql_vlp, pwf_vlp)
         qg_opt, pwf_g_opt = find_intersection(qg_ipr, pwf_ipr, qg_vlp, pwf_vlp)
         qo_opt, pwf_o_opt = find_intersection(qo_ipr, pwf_ipr, qo_vlp, pwf_vlp)
         qw_opt, pwf_w_opt = None, None
-        if all(qw_ipr)!=0 or all(qw_vlp)!=0:
+        
+        if any(qw_ipr)!=0 or any(qw_vlp)!=0:
             qw_opt, pwf_w_opt = find_intersection(qw_ipr, pwf_ipr, qw_vlp, pwf_vlp)
+        
+        liquid = OPTIMAL_LIQUID(Ql=0, Pwf=0)
+        gas = OPTIMAL_GAS(Qg=0, Pwf=0)
+        oil = OPTIMAL_OIL(Qo=0, Pwf=0)
+        water = OPTIMAL_WATER(Qw=0, Pwf=0)
         
         if None not in [ql_opt, pwf_l_opt] or None not in [qg_opt, pwf_g_opt] or None not in [qo_opt, pwf_o_opt] or None not in [qw_opt, pwf_w_opt]:
             if ql_opt!=0 and pwf_l_opt!=0:
@@ -539,11 +557,11 @@ class WellNAOilR:
         if self.model_vlp == 'hagedorn':
             optimal = HagedornBrown(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, qli, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, self.reservoir_pressure, ql_i=qli, amount=self.amount)
         elif self.model_vlp == 'beggs':
             optimal = BeggsBrill(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, qo_i=qli,  amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, self.reservoir_pressure, angle=90, ql_i=qli, amount=self.amount)
         
         h = optimal.delta_depth
         t = optimal.delta_t
@@ -627,17 +645,17 @@ class WellNAOilP:
         return IPR(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf)
         
     def _vlp_(self):
-        qli = 0.001
+        
         qln = self.ipr.Ql[-1]
         
         if self.model_vlp == 'hagedorn':
             vlp = HagedornBrown(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, qli, qln, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, self.reservoir_pressure, ql_i=0.001, ql_n=qln, amount=self.amount)
         elif self.model_vlp == 'beggs':
             vlp = BeggsBrill(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, angle=90, ql_i=qli, ql_n=qln, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, self.reservoir_pressure, angle=90, ql_i=0.001, ql_n=qln, amount=self.amount)
         
         ql, qg, qo, qw, pwf = vlp.outflow()
         return VLP(Ql=ql, Qg=qg, Qo=qo, Qw=qw, Pwf=pwf) 
@@ -675,14 +693,20 @@ class WellNAOilP:
                 return x_opt, y_opt
             else:
                 print("No intersection found.")
-                return None
+                return None, None
 
         ql_opt, pwf_l_opt = find_intersection(ql_ipr, pwf_ipr, ql_vlp, pwf_vlp)
         qg_opt, pwf_g_opt = find_intersection(qg_ipr, pwf_ipr, qg_vlp, pwf_vlp)
         qo_opt, pwf_o_opt = find_intersection(qo_ipr, pwf_ipr, qo_vlp, pwf_vlp)
         qw_opt, pwf_w_opt = None, None
-        if all(qw_ipr)!=0 or all(qw_vlp)!=0:
+        
+        if any(qw_ipr)!=0 or any(qw_vlp)!=0:
             qw_opt, pwf_w_opt = find_intersection(qw_ipr, pwf_ipr, qw_vlp, pwf_vlp)
+        
+        liquid = OPTIMAL_LIQUID(Ql=0, Pwf=0)
+        gas = OPTIMAL_GAS(Qg=0, Pwf=0)
+        oil = OPTIMAL_OIL(Qo=0, Pwf=0)
+        water = OPTIMAL_WATER(Qw=0, Pwf=0)
         
         if None not in [ql_opt, pwf_l_opt] or None not in [qg_opt, pwf_g_opt] or None not in [qo_opt, pwf_o_opt] or None not in [qw_opt, pwf_w_opt]:
             if ql_opt!=0 and pwf_l_opt!=0:
@@ -715,11 +739,11 @@ class WellNAOilP:
         if self.model_vlp == 'hagedorn':
             optimal = HagedornBrown(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, ql_i=qli, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, self.reservoir_pressure, ql_i=qli, amount=self.amount)
         elif self.model_vlp == 'beggs':
             optimal = BeggsBrill(self.wellhead_pressure, self.wellhead_temperature, self.specific_gravity, self.api, 
                     self.bubble_pressure, self.salinity, self.water_cut, self.go_ratio, self.internal_diameter, 
-                    self.rugosity, self.well_depth, self.reservoir_temperature, ql_i=qli, amount=self.amount)
+                    self.rugosity, self.well_depth, self.reservoir_temperature, self.reservoir_pressure, angle=90, ql_i=qli, amount=self.amount)
         
         h = optimal.delta_depth
         t = optimal.delta_t
@@ -731,8 +755,8 @@ if __name__ == "__main__":
     #import time
     #time_start = time.time()
     #well = WellNAOil(400, (84+460), 4500, (140+460), internal_diameter=4.5, well_depth=6000, bubble_pressure=1500)# qo_test=[300, 400, 500, 630], pwf_test=[3500, 3000, 2500, 2000], model_ipr='fetkovich', model_vlp='beggs')
-    well1 = WellNAOilR(149.7, (84+460), 4500, (140+460), internal_diameter=1.5, well_depth=6000, bubble_pressure=1000,)# qo_test=[300, 400, 500, 630], pwf_test=[3500, 3000, 2500, 2000], model_ipr='fetkovich', model_vlp='beggs')
-    
+    well = WellNAGasR(150, 560, 5000, 650, 0.65, 35, 1e-5, 0, 20, 30, 900, 35, 14.7, 1000, 0, 5000, 2, 0.0001, 5000, model_ipr='LIT')
+    print('IPR', well.ipr, 'VLP', well.vlp)
     #well = WellNAGas(400, (84+460), 4500, (140+460), go_ratio=50, internal_diameter=1.5)
     #well1 = WellNAGas(140, (84+460), 1300, (140+460), go_ratio=5000, internal_diameter=2.5, water_cut=0.85)
     
@@ -744,9 +768,11 @@ if __name__ == "__main__":
     #vlp_well = well.vlp
     #print('IPR', ipr_well, 'VLP', vlp_well)
 
-    # ipr_well1 = well1.ipr
-    # vlp_well1 = well1.vlp
-    # print('IPR', ipr_well1, 'VLP', vlp_well1)
+    # ipr_well = well.ipr
+    # vlp_well = well.vlp
+    # print('IPR', ipr_well, 'VLP', vlp_well)
+    # print('Opt', well.rate_liq, well.rate_gas, well.rate_oil, well.rate_water)
+    # print('Drop', well.pressure_flow())
     # print('Optimal', well1.optimal_flow())
     # print('Pressure', well1.pressure_flow())
     # import matplotlib.pyplot as plt
@@ -756,8 +782,8 @@ if __name__ == "__main__":
     # # #ax.plot(ipr.Qo, ipr.Pwf)
     # # #ax.plot(vlp.Qo, vlp.Pwf)
     
-    #axs[0, 0].plot(ipr_well.Ql, ipr_well.Pwf)
-    #axs[0, 0].plot(vlp_well.Ql, vlp_well.Pwf)
+    # ax[0, 0].plot(ipr_well.Ql, ipr_well.Pwf)
+    # ax[0, 0].plot(vlp_well.Ql, vlp_well.Pwf)
     # ax[0, 0].plot(ipr_well1.Ql, ipr_well1.Pwf)
     # ax[0, 0].plot(vlp_well1.Ql, vlp_well1.Pwf)
     
